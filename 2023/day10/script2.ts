@@ -1,5 +1,4 @@
 (function () {
-    const answer = 1647269739;
     const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
     const start = performance.now();
     console.clear();
@@ -86,38 +85,47 @@
     }
 
     function findSurroundingTilesThatTargetCanConnectTo(location: Location) {
+        console.log(`location`, location);
         const surroundingTiles: Location[] = [];
         const tile = location.tile;
         const x = location.location.x;
         const y = location.location.y;
 
         // North
-        const northTile = getTileAtLocation(x, y - 1)!;
-        tileInfo[tile].north && tileInfo[northTile].south && surroundingTiles.push({
-            tile: northTile,
-            location: {x: x, y: y - 1}
-        });
+        const northTile = getTileAtLocation(x, y - 1);
+        if (northTile) {
+            tileInfo[tile].north && tileInfo[northTile].south && surroundingTiles.push({
+                tile: northTile,
+                location: {x: x, y: y - 1}
+            });
+        }
 
         // East
-        const eastTile = getTileAtLocation(x + 1, y)!;
-        tileInfo[tile].east && tileInfo[eastTile].west && surroundingTiles.push({
-            tile: eastTile,
-            location: {x: x + 1, y: y}
-        });
+        const eastTile = getTileAtLocation(x + 1, y);
+        if (eastTile) {
+            tileInfo[tile].east && tileInfo[eastTile].west && surroundingTiles.push({
+                tile: eastTile,
+                location: {x: x + 1, y: y}
+            })
+        }
 
         // South
         const southTile = getTileAtLocation(x, y + 1)!;
-        tileInfo[tile].south && tileInfo[southTile].north && surroundingTiles.push({
-            tile: southTile,
-            location: {x, y: y + 1}
-        });
+        if (southTile) {
+            tileInfo[tile].south && tileInfo[southTile].north && surroundingTiles.push({
+                tile: southTile,
+                location: {x, y: y + 1}
+            })
+        }
 
         // West
         const westTile = getTileAtLocation(x - 1, y)!;
-        tileInfo[tile].west && tileInfo[westTile].east && surroundingTiles.push({
-            tile: westTile,
-            location: {x: x - 1, y}
-        });
+        if (westTile) {
+            tileInfo[tile].west && tileInfo[westTile].east && surroundingTiles.push({
+                tile: westTile,
+                location: {x: x - 1, y}
+            })
+        }
 
         return surroundingTiles;
     }
@@ -131,6 +139,7 @@
 
             const testLocation: Location = {tile: tile as Tile, location: location.location};
             const surroundingTiles = findSurroundingTilesThatTargetCanConnectTo(testLocation);
+            console.log(`tile`, tile, surroundingTiles);
             if (surroundingTiles.length === 2) {
                 startTile = tile as Tile;
             }
@@ -139,17 +148,10 @@
         return startTile;
     }
 
-    function getInsideDirection(location: Location): TileConnection {
-        if (location.tile === '-') {
-            return 'east';
-        }
-
-        return 'east'
-    }
-
-
     const startLocation = findStartLocation();
+    console.log(`startLocation`, startLocation);
     const startTile = getStartTile(startLocation);
+    console.log(`startTile`, startTile);
     tileMap[startLocation.location.x][startLocation.location.y] = startTile!;
 
     if (!startTile) {
@@ -177,51 +179,39 @@
         currentLocation = nextLocation;
     }
 
-    const insides = new Set<string>();
     console.log(`startLocation.tile`, startLocation.tile);
 
-    function getWallDirection(index: number, startTile: Tile) {
-        const startTileCorner = ['L', 'J', '7', 'F'].includes(startTile) ? startTile : loop.find((location) => ['L', 'J', '7', 'F'].includes(location.tile))?.tile;
-        const nextCorner = loop.slice(index).find((location) => ['L', 'J', '7', 'F'].includes(location.tile))?.tile || startTileCorner;
-        const previousCorner = loop.slice(0, index).reverse().find((location) => ['L', 'J', '7', 'F'].includes(location.tile))?.tile || startTileCorner;
+    console.log(`loop`, loop);
 
-        return [previousCorner, nextCorner];
-    }
+    let insides = 0;
+    let checks = 0;
 
-    loop.forEach((location) => {
-        if (location.tile === '-') {
-            console.log(`location`, location);
-            let northIndex: number | null = location.location.y - 1;
-            let found = false;
-            console.log(`northIndex`, northIndex);
-            while (!found) {
-                const tile = getTileAtLocation(location.location.x, northIndex)
-                if (tile === null) {
-                    found = true;
-                    northIndex = null;
-                }
+    tileMap.forEach((row, rowIndex) => {
+        row.forEach((column, columnIndex) => {
+            const tile = tileMap[rowIndex][columnIndex];
+            if (tile === '.') {
+                console.log(rowIndex, columnIndex);
+                checks++;
 
-                if (tile !== '.' && tile !== 'S') {
-                    found = true;
-                    console.log(`found`, tile);
-                } else {
-                    if (northIndex !== null) {
-                        northIndex--;
-                    }
+                const loopsNorth = loop.filter((location) => location.location.x === columnIndex && location.location.y < rowIndex).length;
+                const loopsEast = loop.filter((location) => location.location.y === rowIndex && location.location.x > columnIndex).length;
+                const loopsSouth = loop.filter((location) => location.location.x === columnIndex && location.location.y > rowIndex).length;
+                const loopsWest = loop.filter((location) => location.location.y === rowIndex && location.location.x < columnIndex).length;
+                const loops = [loopsEast, loopsNorth, loopsSouth, loopsWest];
+                const outside = loops.some((l) => l % 2 === 0);
+
+                console.log(`loops`, loops, outside
+                );
+
+                if (!outside) {
+                    insides++;
                 }
             }
+        });
+    })
 
-            console.log(`northIndex`, northIndex);
-
-            if (northIndex !== null) {
-                const nextNorthLoop = loop.find((l) => l.location.y === northIndex && l.location.x === location.location.x)!;
-                console.log(`nextNorthLoop`, northIndex, nextNorthLoop);
-                console.log(`getWallDirection(i, startTile)`, getWallDirection(northIndex, nextNorthLoop.tile));
-            }
-        }
-
-        console.log(`-----------------------------`,);
-    });
+    console.log(`checks`, checks);
+    console.log(`insides`, insides);
 
     console.log(`time`, performance.now() - start);
 })();
