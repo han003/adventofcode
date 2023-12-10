@@ -7,7 +7,6 @@
     type Tile = '|' | '-' | 'L' | 'J' | '7' | 'F' | '.' | 'S';
     type Location = { tile: Tile, location: [number, number]};
     type TileConnection = 'north' | 'south' | 'east' | 'west';
-    type SurroundingTiles = Record<string, number[]>;
 
     const tileInfo: Record<Tile, Record<TileConnection, boolean>> = {
         '|': {
@@ -158,13 +157,16 @@
         console.log(`Current`, currentLocation.tile);
         moves++;
         let surrounding = findSurroundingTilesThatTargetCanConnectTo(currentLocation);
-        const nextLocation = surrounding.find((location) => {
-            if (previousLocation === null) {
-                return true;
-            }
+        let nextLocation: Location;
 
-            return location.location[0] !== previousLocation.location[0] || location.location[1] !== previousLocation.location[1];
-        });
+        if (!previousLocation) {
+            nextLocation = surrounding[0];
+        } else {
+            nextLocation = surrounding.find((location) => {
+                return location.location[0] !== previousLocation!.location[0] || location.location[1] !== previousLocation!.location[1];
+            })!;
+        }
+
 
         if (!nextLocation) {
             return;
@@ -174,6 +176,7 @@
         currentLocation = nextLocation;
     }
 
+    console.log(`total moves`, moves);
     console.log(`move`, moves / 2);
 
     console.log(`time`, performance.now() - start);
