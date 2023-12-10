@@ -76,16 +76,15 @@
     }
 
     function findStartLocation(): Location {
-        const start = tileMap.findIndex((line) => line.some((tile) => tile === 'S'));
-        const end = tileMap[start].findIndex((tile) => tile === 'S');
+        const row = tileMap.findIndex((line) => line.some((tile) => tile === 'S'));
+        const column = tileMap[row].findIndex((tile) => tile === 'S');
         return {
             tile: 'S',
-            location: {x: start, y: end}
+            location: {x: column, y: row}
         };
     }
 
     function findSurroundingTilesThatTargetCanConnectTo(location: Location) {
-        console.log(`location`, location);
         const surroundingTiles: Location[] = [];
         const tile = location.tile;
         const x = location.location.x;
@@ -152,7 +151,6 @@
     console.log(`startLocation`, startLocation);
     const startTile = getStartTile(startLocation);
     console.log(`startTile`, startTile);
-    tileMap[startLocation.location.x][startLocation.location.y] = startTile!;
 
     if (!startTile) {
         return;
@@ -180,38 +178,90 @@
     }
 
     console.log(`startLocation.tile`, startLocation.tile);
-
+    loop[0].tile = startTile;
     console.log(`loop`, loop);
 
-    let insides = 0;
-    let checks = 0;
+    let outsides = new Set<string>();
+    let handDirections: TileConnection[] = ['north'];
 
-    tileMap.forEach((row, rowIndex) => {
-        row.forEach((column, columnIndex) => {
-            const tile = tileMap[rowIndex][columnIndex];
-            if (tile === '.') {
-                console.log(rowIndex, columnIndex);
-                checks++;
+    loop.forEach((location, index) => {
+        console.log(`index`, index);
 
-                const loopsNorth = loop.filter((location) => location.location.x === columnIndex && location.location.y < rowIndex).length;
-                const loopsEast = loop.filter((location) => location.location.y === rowIndex && location.location.x > columnIndex).length;
-                const loopsSouth = loop.filter((location) => location.location.x === columnIndex && location.location.y > rowIndex).length;
-                const loopsWest = loop.filter((location) => location.location.y === rowIndex && location.location.x < columnIndex).length;
-                const loops = [loopsEast, loopsNorth, loopsSouth, loopsWest];
-                const outside = loops.some((l) => l % 2 === 0);
+        let extraDirections: TileConnection[] = [];
 
-                console.log(`loops`, loops, outside
-                );
+        if (location.tile === 'F') {
+            handDirections = ['south'];
+        }
+        if (location.tile === '7') {
+            handDirections = ['west'];
+        }
+        if (location.tile === 'J') {
+            handDirections = ['north'];
+        }
+        if (location.tile === 'L') {
+            handDirections = ['east'];
+        }
 
-                if (!outside) {
-                    insides++;
+        [...handDirections, ...extraDirections].forEach((direction) => {
+            if (direction === 'north') {
+                let index = 1;
+                let loc: Location['location'] = {x: location.location.x, y: location.location.y - index}
+                let tile = getTileAtLocation(loc.x, loc.y);
+
+                while (tile === '.') {
+                    outsides.add(`${location.location.x},${location.location.y - index}`);
+
+                    index++;
+                    loc = {x: location.location.x, y: location.location.y - index}
+                    tile = getTileAtLocation(loc.x, loc.y);
+                }
+            }
+
+            if (direction === 'east') {
+                let index = 1;
+                let loc: Location['location'] = {x: location.location.x + index, y: location.location.y}
+                let tile = getTileAtLocation(loc.x, loc.y);
+
+                while (tile === '.') {
+                    outsides.add(`${location.location.x + index},${location.location.y}`);
+
+                    index++;
+                    loc = {x: location.location.x + index, y: location.location.y}
+                    tile = getTileAtLocation(loc.x, loc.y);
+                }
+            }
+
+            if (direction === 'south') {
+                let index = 1;
+                let loc: Location['location'] = {x: location.location.x, y: location.location.y + index}
+                let tile = getTileAtLocation(loc.x, loc.y);
+
+                while (tile === '.') {
+                    outsides.add(`${location.location.x},${location.location.y + index}`);
+
+                    index++;
+                    loc = {x: location.location.x, y: location.location.y + index}
+                    tile = getTileAtLocation(loc.x, loc.y);
+                }
+            }
+
+            if (direction === 'west') {
+                let index = 1;
+                let loc: Location['location'] = {x: location.location.x - index, y: location.location.y}
+                let tile = getTileAtLocation(loc.x, loc.y);
+
+                while (tile === '.') {
+                    outsides.add(`${location.location.x - index},${location.location.y}`);
+
+                    index++;
+                    loc = {x: location.location.x - index, y: location.location.y}
+                    tile = getTileAtLocation(loc.x, loc.y);
                 }
             }
         });
-    })
+    });
 
-    console.log(`checks`, checks);
-    console.log(`insides`, insides);
+    console.log(`outsides`, outsides, outsides.size);
 
     console.log(`time`, performance.now() - start);
 })();
