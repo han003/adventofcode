@@ -1,6 +1,6 @@
 (function () {
     const answer = 1647269739;
-    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
+    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
     const start = performance.now();
     console.clear();
 
@@ -70,47 +70,54 @@
     function findStartLocation(): Location {
         const start = tileMap.findIndex((line) => line.some((tile) => tile === 'S'));
         const end = tileMap[start].findIndex((tile) => tile === 'S');
-        return [start, end];
+        return {
+            tile: 'S',
+            location: [start, end],
+        };
     }
 
-    function findSurroundingTilesThatTargetCanConnectTo(tile: Tile, location: Location) {
-        const surroundingTiles: { tile: Tile, location: Location }[] = [];
+    function findSurroundingTilesThatTargetCanConnectTo(location: Location) {
+        const surroundingTiles: Location[] = [];
+        const tile = location.tile;
+        const x = location.location[0];
+        const y = location.location[1];
 
         // North
-        if (location[0] > 0) {
-            const northTile = tileMap[location[0] - 1][location[1]];
+        if (x > 0) {
+            const northTile = tileMap[x - 1][y];
             tileInfo[tile].north && tileInfo[northTile].south && surroundingTiles.push({
                 tile: northTile,
-                location: [location[0] - 1, location[1]],
+                location: [x - 1, y],
             });
         }
 
         // East
-        if (location[1] < tileMap[0].length - 1) {
-            const eastTile = tileMap[location[0]][location[1] + 1];
+        if (y < tileMap[0].length - 1) {
+            const eastTile = tileMap[x][y + 1];
             tileInfo[tile].east && tileInfo[eastTile].west && surroundingTiles.push({
                 tile: eastTile,
-                location: [location[0], location[1] + 1],
+                location: [x, y + 1],
             });
         }
 
         // South
-        if (location[0] < tileMap.length - 1) {
-            const southTile = tileMap[location[0] + 1][location[1]];
+        if (x < tileMap.length - 1) {
+            const southTile = tileMap[x + 1][y];
             tileInfo[tile].south && tileInfo[southTile].north && surroundingTiles.push({
                 tile: southTile,
-                location: [location[0] + 1, location[1]],
+                location: [x + 1, y],
             });
         }
 
         // West
-        if (location[1] > 0) {
-            const westTile = tileMap[location[0]][location[1] - 1];
+        if (y > 0) {
+            const westTile = tileMap[x][y - 1];
             tileInfo[tile].west && tileInfo[westTile].east && surroundingTiles.push({
                 tile: westTile,
-                location: [location[0], location[1] - 1],
+                location: [x, y - 1],
             });
         }
+
 
         return surroundingTiles;
     }
@@ -122,7 +129,8 @@
                 return;
             }
 
-            const surroundingTiles = findSurroundingTilesThatTargetCanConnectTo(tile as Tile, location);
+            const testLocation: Location = {tile: tile as Tile, location: location.location};
+            const surroundingTiles = findSurroundingTilesThatTargetCanConnectTo(testLocation);
             if (surroundingTiles.length === 2) {
                 startTile = tile as Tile;
             }
@@ -133,6 +141,7 @@
 
 
     const startLocation = findStartLocation();
+    console.log(`startLocation`, startLocation);
     const startTile = getStartTile(startLocation);
 
     console.log(`start`, startTile);
@@ -141,20 +150,31 @@
         return;
     }
 
+    let moves = 0
     let currentLocation: Location = startLocation;
     let previousLocation: Location | null = null;
-    tileMap[startLocation[0]][startLocation[1]] = startTile;
 
-    while (currentLocation !== startLocation || previousLocation === null) {
-        let surrounding = findSurroundingTilesThatTargetCanConnectTo(startTile, currentLocation);
+    while ((currentLocation.tile !== 'S' || previousLocation === null)) {
+        console.log(`Current`, currentLocation.tile);
+        moves++;
+        let surrounding = findSurroundingTilesThatTargetCanConnectTo(currentLocation);
+        const nextLocation = surrounding.find((location) => {
+            if (previousLocation === null) {
+                return true;
+            }
+
+            return location.location[0] !== previousLocation.location[0] || location.location[1] !== previousLocation.location[1];
+        });
+
+        if (!nextLocation) {
+            return;
+        }
+
+        previousLocation = currentLocation;
+        currentLocation = nextLocation;
     }
 
-    console.log(`surrounding`, surrounding);
-
-    console.log(`go to `, surrounding[0]);
-
-    surrounding = findSurroundingTilesThatTargetCanConnectTo(surrounding[0].tile, surrounding[0].location)
-    console.log(`surrounding`, surrounding);
+    console.log(`move`, moves / 2);
 
     console.log(`time`, performance.now() - start);
 })();
