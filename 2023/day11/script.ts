@@ -1,15 +1,9 @@
 (function() {
-    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
+    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
     const start = performance.now();
     console.log(`time`, performance.now() - start);
 
-    function showStarMap(lines: string[]) {
-        console.group('Star map');
-        lines.forEach((line) => {
-            console.log(line);
-        });
-        console.groupEnd();
-    }
+    const expansionSize: number = 1;
 
     function rotate(matrix: string[][], times: number) {
         let rotated = matrix.slice(0);
@@ -28,7 +22,7 @@
             const empty = line.replaceAll('.', '').length === 0;
 
             if (empty) {
-                expanded = expanded.concat([ line, line ]);
+                expanded = expanded.concat(Array.from({ length: expansionSize === 1 ? 2 : expansionSize }, () => line));
             } else {
                 expanded.push(line);
             }
@@ -51,14 +45,11 @@
     }
 
     const semiExpandedStarMap: string[] = expandEmpty(lines);
-    showStarMap(semiExpandedStarMap);
 
     const twoDMap = to2D(semiExpandedStarMap);
     const rotatedOne = rotate(twoDMap, 1);
     const expandedOne = expandEmpty(rotatedOne.map((line) => line.join('')));
     const finalExpandedMap = rotate(to2D(expandedOne), 3).map((line) => line.join(''));
-
-    showStarMap(finalExpandedMap);
 
     type Galaxy = { id: string, x: number, y: number };
     const galaxies = finalExpandedMap.reduce((acc, line, lineIndex) => {
@@ -78,10 +69,7 @@
     }, {} as Record<string, Galaxy>);
 
     console.log(`galaxies`, galaxies);
-    console.log(`number of galaxies`, Object.keys(galaxies).length);
     const galaxyIds = Object.keys(galaxies).map((galaxyId) => galaxyId);
-
-    console.log('pairs', findPairs(galaxyIds).length);
 
     function findDistance(g1: Galaxy, g2: Galaxy) {
         const yDiff = Math.abs(g1.y - g2.y);

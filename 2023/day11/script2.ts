@@ -75,8 +75,8 @@
     });
 
     Object.values(galaxies).forEach((galaxy) => {
-        galaxy.x = galaxy.x + (galaxy.xExpansions * expansionSize);
-        galaxy.y = galaxy.y + (galaxy.yExpansions * expansionSize);
+        galaxy.x = (galaxy.x + (galaxy.xExpansions * expansionSize));
+        galaxy.y = (galaxy.y + (galaxy.yExpansions * expansionSize));
     });
 
     console.log(`expansions`, expansions);
