@@ -1,9 +1,9 @@
 (function () {
-    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
+    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
     const start = performance.now();
     console.clear();
 
-    type Tile = '|' | '-' | 'L' | 'J' | '7' | 'F' | '.' | 'S';
+    type Tile = '|' | '-' | 'L' | 'J' | '7' | 'F' | '.' | 'S' | '#';
     type Location = { tile: Tile, location: { x: number, y: number } };
     type TileConnection = 'north' | 'south' | 'east' | 'west';
 
@@ -50,6 +50,12 @@
             east: false,
             west: false,
         },
+        '#': {
+            north: false,
+            south: false,
+            east: false,
+            west: false,
+        },
         'S': {
             north: true,
             south: true,
@@ -82,6 +88,10 @@
             tile: 'S',
             location: {x: column, y: row}
         };
+    }
+
+    function getTileInfo(tile: Tile) {
+
     }
 
     function findSurroundingTilesThatTargetCanConnectTo(location: Location) {
@@ -191,6 +201,28 @@
             }
         });
     });
+
+    tileMap.forEach((row) => {
+        if (row[0] === '.') {
+            const index = row.findIndex((tile) => tile !== '.');
+
+            for (let i = 0; i < index; i++) {
+                row[i] = '#';
+            }
+        }
+
+        row.reverse();
+
+        if (row[0] === '.') {
+            const index = row.findIndex((tile) => tile !== '.');
+
+            for (let i = 0; i < index; i++) {
+                row[i] = '#';
+            }
+        }
+
+        row.reverse();
+    })
 
     tileMap.forEach((row) => {
         console.log(row.join(''));
