@@ -7,8 +7,7 @@
   "overrides": [
     {
       "files": [
-        "day1/**/*.ts",
-        "day2/**/*.ts"
+        "2023/**/*.ts"
       ],
       "parserOptions": {
         "project": [
@@ -18,17 +17,11 @@
       },
       "extends": [
         "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/eslint-recommended",
-        "plugin:@angular-eslint/recommended",
-        "plugin:@angular-eslint/template/process-inline-templates"
+        "plugin:@typescript-eslint/eslint-recommended"
       ],
       "globals": {
         "require": "readonly",
-        "module": "readonly",
-        "showdown": "readonly",
-        "process": "readonly",
-        "dataLayer": "readonly",
-        "newrelic": "readonly"
+        "module": "readonly"
       },
       "rules": {
         "no-multiple-empty-lines": [
@@ -232,15 +225,6 @@
           }
         ]
       }
-    },
-    {
-      "files": [
-        "src/app/**/*.html"
-      ],
-      "extends": [
-        "plugin:@angular-eslint/template/recommended"
-      ],
-      "rules": {}
     }
   ]
 }
