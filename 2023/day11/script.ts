@@ -1,5 +1,5 @@
 (function() {
-    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
+    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
     const start = performance.now();
     console.log(`time`, performance.now() - start);
 
@@ -80,23 +80,39 @@
 
     showStarMap(finalExpandedMap);
 
+    type Galaxy = { id: string, x: number, y: number };
     const galaxies = finalExpandedMap.reduce((acc, line, lineIndex) => {
         line.split('').forEach((char, charIndex) => {
             if (char === '#') {
-                acc.push({
-                    id: acc.length,
+                const id = String(Object.keys(acc).length);
+
+                acc[id] = {
+                    id,
                     x: charIndex,
                     y: lineIndex,
-                });
+                };
             }
         });
 
         return acc;
-    }, [] as { id: number, x: number, y: number }[]);
+    }, {} as Record<string, Galaxy>);
 
     console.log(`galaxies`, galaxies);
-    console.log(`number of galaxies`, galaxies.length);
-    const galaxyIds = galaxies.map((galaxy) => galaxy.id);
+    console.log(`number of galaxies`, Object.keys(galaxies).length);
+    const galaxyIds = Object.keys(galaxies).map((galaxyId) => galaxyId);
 
     console.log('pairs', findPairs(galaxyIds).length);
+
+    function findDistance(g1: Galaxy, g2: Galaxy) {
+        const yDiff = Math.abs(g1.y - g2.y);
+        const xDiff = Math.abs(g1.x - g2.x);
+
+        return xDiff + yDiff;
+    }
+
+    const sum = findPairs(galaxyIds).reduce((acc, [ g1, g2 ]) => {
+        return acc + findDistance(galaxies[g1], galaxies[g2]);
+    }, 0);
+
+    console.log(`sum`, sum);
 })();
