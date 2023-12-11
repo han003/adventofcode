@@ -1,5 +1,5 @@
 (function() {
-    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
+    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
     const start = performance.now();
     console.log(`time`, performance.now() - start);
 
@@ -7,12 +7,13 @@
     console.log(`universeWidth`, universeWidth);
     const universeHeight = lines.length;
     console.log(`universeHeight`, universeHeight);
-    const expansionSize = 10;
+    const expansionSize = 1;
 
     function findPairs<T>(array: T[]) {
         return ([] as T[][]).concat(...array.map(
             (v, i) => array.slice(i + 1).map((w) => [ v, w ])),
         );
+
     }
 
     function findDistance(g1: Galaxy, g2: Galaxy) {
@@ -75,8 +76,13 @@
     });
 
     Object.values(galaxies).forEach((galaxy) => {
-        galaxy.x = (galaxy.x + (galaxy.xExpansions * expansionSize));
-        galaxy.y = (galaxy.y + (galaxy.yExpansions * expansionSize));
+        if (expansionSize === 1) {
+            galaxy.x = galaxy.x + galaxy.xExpansions;
+            galaxy.y = galaxy.y + galaxy.yExpansions;
+        } else {
+            galaxy.x = (galaxy.x + (galaxy.xExpansions * expansionSize)) - galaxy.xExpansions;
+            galaxy.y = (galaxy.y + (galaxy.yExpansions * expansionSize)) - galaxy.yExpansions;
+        }
     });
 
     console.log(`expansions`, expansions);
