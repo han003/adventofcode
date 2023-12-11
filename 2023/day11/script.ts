@@ -50,7 +50,24 @@
     const twoDMap = to2D(semiExpandedStarMap);
     const rotatedOne = rotate(twoDMap, 1);
     const expandedOne = expandEmpty(rotatedOne.map((line) => line.join('')));
-    const twoDMapTwo = to2D(expandedOne);
+    const finalExpandedMap = rotate(to2D(expandedOne), 3).map((line) => line.join(''));
 
-    showStarMap(rotate(twoDMapTwo, 3).map((line) => line.join('')));
+    showStarMap(finalExpandedMap);
+
+    const galaxies = finalExpandedMap.reduce((acc, line, lineIndex) => {
+        line.split('').forEach((char, charIndex) => {
+            if (char === '#') {
+                acc.push({
+                    id: acc.length,
+                    x: charIndex,
+                    y: lineIndex,
+                });
+            }
+        });
+
+        return acc;
+    }, [] as { id: number, x: number, y: number }[]);
+
+    console.log(`galaxies`, galaxies);
+    console.log(`number of galaxies`, galaxies.length);
 })();
