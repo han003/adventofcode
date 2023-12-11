@@ -1,5 +1,5 @@
 (function () {
-    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
+    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
     const start = performance.now();
     console.clear();
 
@@ -90,9 +90,6 @@
         };
     }
 
-    function getTileInfo(tile: Tile) {
-
-    }
 
     function findSurroundingTilesThatTargetCanConnectTo(location: Location) {
         const surroundingTiles: Location[] = [];
@@ -191,158 +188,49 @@
     loop[0].tile = startTile;
     console.log(`loop`, loop);
 
-    tileMap.forEach((row, rowIndex) => {
-        row.forEach((column, columnIndex) => {
-            const tile = tileMap[rowIndex][columnIndex];
-            const connects = findSurroundingTilesThatTargetCanConnectTo({tile, location: {x: columnIndex, y: rowIndex}}).length;
+    console.log(`Answer 1`, loop.length / 2);
 
-            if (connects !== 2) {
-                tileMap[rowIndex][columnIndex] = '.';
+    let insides = 0;
+
+    lines.forEach((line, lineIndex) => {
+        line.split('').forEach((tile, tileIndex) => {
+            const partOfLoop = loop.find(l => l.location.x === tileIndex && l.location.y === lineIndex);
+
+            if (partOfLoop) {
+                return;
+            }
+
+            let loopsRight = loop.filter(l => l.location.y === lineIndex && l.location.x > tileIndex);
+
+            const wallsToTheRight = loopsRight.filter(l => l.tile !== '-').reduce((acc, l, index, arr) => {
+                if (l.tile === '|') {
+                    return (acc + 1);
+                }
+
+                const nextTile = arr[index + 1];
+                if (!nextTile) {
+                    return acc;
+                }
+
+                if (l.tile === 'L' && nextTile.tile === '7') {
+                    return (acc + 1);
+                }
+
+                if (l.tile === 'F' && nextTile.tile === 'J') {
+                    return (acc + 1);
+                }
+
+                return acc;
+            }, 0);
+
+            if (wallsToTheRight % 2 === 1) {
+                console.log(`tile`, tile, lineIndex, tileIndex);
+                insides++;
             }
         });
     });
 
-    tileMap.forEach((row) => {
-        if (row[0] === '.') {
-            const index = row.findIndex((tile) => tile !== '.');
-
-            for (let i = 0; i < index; i++) {
-                row[i] = '#';
-            }
-        }
-
-        row.reverse();
-
-        if (row[0] === '.') {
-            const index = row.findIndex((tile) => tile !== '.');
-
-            for (let i = 0; i < index; i++) {
-                row[i] = '#';
-            }
-        }
-
-        row.reverse();
-    })
-
-    tileMap.forEach((row) => {
-        console.log(row.join(''));
-    });
-
-    let outsides = new Set<string>();
-    let handDirections: TileConnection[] = ['north'];
-
-    loop.forEach((location) => {
-        let extraDirections: TileConnection[] = [];
-
-        if (location.tile === 'F') {
-            handDirections = ['south'];
-            extraDirections = ['east', 'west', 'north'];
-        }
-        if (location.tile === '7') {
-            handDirections = ['west'];
-            extraDirections = ['east', 'south', 'north'];
-        }
-        if (location.tile === 'J') {
-            handDirections = ['north'];
-            extraDirections = ['east', 'west', 'south'];
-        }
-        if (location.tile === 'L') {
-            handDirections = ['east'];
-            extraDirections = ['south', 'west', 'north'];
-        }
-
-        [...handDirections, ...extraDirections].forEach((direction) => {
-            if (direction === 'north') {
-                let index = 1;
-                let loc: Location['location'] = {x: location.location.x, y: location.location.y - index}
-                let tile = getTileAtLocation(loc.x, loc.y);
-
-                while (tile === '.') {
-                    outsides.add(`${location.location.x},${location.location.y - index}`);
-
-                    index++;
-                    loc = {x: location.location.x, y: location.location.y - index}
-                    tile = getTileAtLocation(loc.x, loc.y);
-                }
-            }
-
-            if (direction === 'east') {
-                let index = 1;
-                let loc: Location['location'] = {x: location.location.x + index, y: location.location.y}
-                let itemsToAdd: string[] = [];
-                let tile = getTileAtLocation(loc.x, loc.y);
-
-                while (tile === '.') {
-                    itemsToAdd.push(`${location.location.x + index},${location.location.y}`);
-
-                    index++;
-                    loc = {x: location.location.x + index, y: location.location.y}
-                    tile = getTileAtLocation(loc.x, loc.y);
-
-                    if (tile === null) {
-                        itemsToAdd = [];
-                    }
-                }
-
-                itemsToAdd.forEach((item) => outsides.add(item));
-            }
-
-            if (direction === 'south') {
-                let index = 1;
-                let loc: Location['location'] = {x: location.location.x, y: location.location.y + index}
-                let itemsToAdd: string[] = [];
-                let tile = getTileAtLocation(loc.x, loc.y);
-
-                while (tile === '.') {
-                    itemsToAdd.push(`${location.location.x},${location.location.y + index}`);
-
-                    index++;
-                    loc = {x: location.location.x, y: location.location.y + index}
-                    tile = getTileAtLocation(loc.x, loc.y);
-
-                    if (tile === null) {
-                        itemsToAdd = [];
-                    }
-                }
-
-                itemsToAdd.forEach((item) => outsides.add(item));
-            }
-
-            if (direction === 'west') {
-                let index = 1;
-                let loc: Location['location'] = {x: location.location.x - index, y: location.location.y}
-                let itemsToAdd: string[] = [];
-                let tile = getTileAtLocation(loc.x, loc.y);
-
-                while (tile === '.') {
-                    itemsToAdd.push(`${location.location.x - index},${location.location.y}`);
-
-                    index++;
-                    loc = {x: location.location.x - index, y: location.location.y}
-                    tile = getTileAtLocation(loc.x, loc.y);
-
-                    if (tile === null) {
-                        itemsToAdd = [];
-                    }
-                }
-
-                itemsToAdd.forEach((item) => outsides.add(item));
-            }
-        });
-    });
-
-    console.log(`---------------------`);
-
-    outsides.forEach((outside) => {
-        const [x, y] = outside.split(',').map((n) => parseInt(n));
-        tileMap[y][x] = 'X' as any;
-    });
-
-    tileMap.forEach((row) => {
-        console.log(row.join(''));
-    });
-
-    console.log(`outsides`, outsides, outsides.size);
+    console.log(`insides`, insides);
 
     console.log(`time`, performance.now() - start);
 })();
