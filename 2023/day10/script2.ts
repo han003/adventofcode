@@ -1,5 +1,5 @@
 (function () {
-    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
+    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
     const start = performance.now();
     console.clear();
 
@@ -200,7 +200,7 @@
                 return;
             }
 
-            let loopsRight = loop.filter(l => l.location.y === lineIndex && l.location.x > tileIndex);
+            let loopsRight = loop.filter(l => l.location.y === lineIndex && l.location.x > tileIndex).sort((a, b) => a.location.x - b.location.x);
 
             const wallsToTheRight = loopsRight.filter(l => l.tile !== '-').reduce((acc, l, index, arr) => {
                 if (l.tile === '|') {
@@ -224,7 +224,6 @@
             }, 0);
 
             if (wallsToTheRight % 2 === 1) {
-                console.log(`tile`, tile, lineIndex, tileIndex);
                 insides++;
             }
         });
