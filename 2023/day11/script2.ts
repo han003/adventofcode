@@ -1,10 +1,28 @@
 (function() {
-    const lines = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8').split(/\r?\n/).filter((l: any) => l?.length) as string[];
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
+    const lines = input.split(/\r?\n/).filter((l) => l.length) as string[];
     const start = performance.now();
 
     const universeWidth = lines[0].length;
     const universeHeight = lines.length;
     const expansionSize: number = 1e6;
+    const galaxyMatches = input.replaceAll(/\r?\n/g, '').matchAll(/#/g);
+
+    type Galaxy = { id: string, x: number, y: number, xExpansions: number, yExpansions: number };
+    const galaxies = Array.from(galaxyMatches).reduce((acc, match, galaxyIndex) => {
+        const matchIndex = match.index || 0;
+        const id = String(galaxyIndex);
+
+        acc[id] = {
+            id,
+            x: matchIndex % universeWidth,
+            y: Math.floor(matchIndex / universeWidth),
+            xExpansions: 0,
+            yExpansions: 0,
+        };
+
+        return acc;
+    }, {} as Record<string, Galaxy>);
 
     function findPairs<T>(array: T[]) {
         return ([] as T[][]).concat(...array.map(
@@ -18,25 +36,7 @@
         return xDiff + yDiff;
     }
 
-    type Galaxy = { id: string, x: number, y: number, xExpansions: number, yExpansions: number };
-    const galaxies = lines.reduce((acc, line, lineIndex) => {
-        line.split('').forEach((char, charIndex) => {
-            if (char === '#') {
-                const id = String(Object.keys(acc).length);
-
-                acc[id] = {
-                    id,
-                    x: charIndex,
-                    y: lineIndex,
-                    xExpansions: 0,
-                    yExpansions: 0,
-                };
-            }
-        });
-
-        return acc;
-    }, {} as Record<string, Galaxy>);
-
+    // Find expansions
     type Expansion = { x?: number, y?: number };
     const expansions: Expansion[] = [];
     for (let i = 0; i < universeWidth; i++) {
@@ -52,6 +52,7 @@
         }
     }
 
+    // Add expansions to galaxies
     expansions.forEach((expansion) => {
         if (expansion.x) {
             Object.values(galaxies).forEach((galaxy) => {
@@ -70,6 +71,7 @@
         }
     });
 
+    // Update galaxy positions
     Object.values(galaxies).forEach((galaxy) => {
         galaxy.x = (galaxy.x + (galaxy.xExpansions * expansionSize)) - (expansionSize === 1 ? 0 : galaxy.xExpansions);
         galaxy.y = (galaxy.y + (galaxy.yExpansions * expansionSize)) - (expansionSize === 1 ? 0 : galaxy.yExpansions);
@@ -79,6 +81,6 @@
         return acc + findDistance(galaxies[g1], galaxies[g2]);
     }, 0);
 
-    console.log(`sum`, sum);
     console.log(`time`, performance.now() - start);
+    console.log(`sum`, sum);
 })();
