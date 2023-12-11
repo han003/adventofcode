@@ -3,26 +3,6 @@
     const start = performance.now();
     console.log(`time`, performance.now() - start);
 
-    function permutator<T>(inputArr: T[]) {
-        const result: T[][] = [];
-
-        const permute = (arr: T[], m: T[] = []) => {
-            if (arr.length === 0) {
-                result.push(m);
-            } else {
-                for (let i = 0; i < arr.length; i++) {
-                    const curr = arr.slice();
-                    const next = curr.splice(i, 1);
-                    permute(curr.slice(), m.concat(next));
-                }
-            }
-        };
-
-        permute(inputArr);
-
-        return result;
-    }
-
     function showStarMap(lines: string[]) {
         console.group('Star map');
         lines.forEach((line) => {
