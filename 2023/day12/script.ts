@@ -1,5 +1,5 @@
 (function() {
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
     const lines = input.split(/\r?\n/).filter((l) => l.length) as string[];
     const start = performance.now();
     const OPERATIONAL = '.';
@@ -11,44 +11,22 @@
         return configData.split(',').map((x) => parseInt(x));
     }
 
-    function permutations(iList: string[], maxLength: number) {
-        const cur = Array(maxLength);
-        const results = new Set<string>();
-
-        function rec(list: string[], depth = 0) {
-            if (depth == maxLength) {
-                return results.add(cur.join(''));
-            }
-
-            for (let i = 0; i < list.length; ++i) {
-                cur[depth] = list.splice(i, 1)[0];
-                rec(list, depth + 1);
-                list.splice(i, 0, cur[depth]);
-            }
-        }
-
-        rec(iList);
-
-        return results;
-    }
-
     function getAllPossibleLines(line: string) {
         const lines = new Set<string>();
-        const unknowns = line.split('?').length;
-        const damaged = Array.from({ length: unknowns }, () => DAMAGED);
-        const operational = Array.from({ length: unknowns }, () => OPERATIONAL);
-        const perms = permutations([ ...operational, ...damaged ], unknowns);
-        console.log(`perms.length`, perms.size);
+        const unknowns = line.replaceAll(/[^\?]/g, '').length;
+        const number = parseInt('1'.repeat(unknowns), 2);
 
-        perms.forEach((combination) => {
+        for (let i = 0; i <= number; i++) {
             let newLine = line;
+            const binaryNumber = i.toString(2);
+            const replacementArray = (''.padStart(unknowns - binaryNumber.length, '0') + binaryNumber).replaceAll('0', OPERATIONAL).replaceAll('1', DAMAGED).split('');
 
-            combination.split('').forEach((value) => {
-                newLine = newLine.replace('?', value);
+            replacementArray.forEach((char) => {
+                newLine = newLine.replace('?', char);
             });
 
             lines.add(newLine);
-        });
+        }
 
         return Array.from(lines);
     }
@@ -69,16 +47,20 @@
     }
 
     let arrangements = 0;
-    const line = '.??..??...?##. 1,1,3';
-    const config = getTargetConfig(line);
-    console.log(`config`, config);
-    const possibleLines = getAllPossibleLines(line);
 
-    possibleLines.forEach((possibleLine) => {
-        if (lineMatchesConfig(possibleLine, config)) {
-            arrangements++;
-            console.log(`possibleLine`, possibleLine);
-        }
+    lines.forEach((line) => {
+        const config = getTargetConfig(line);
+        const possibleLines = getAllPossibleLines(line);
+        let lineArrangements = 0;
+
+        possibleLines.forEach((possibleLine) => {
+            if (lineMatchesConfig(possibleLine, config)) {
+                lineArrangements++;
+            }
+        });
+
+        console.log(`lineArrangements`, lineArrangements);
+        arrangements += lineArrangements;
     });
 
     console.log(`arrangements`, arrangements);
