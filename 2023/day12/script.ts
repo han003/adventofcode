@@ -29,23 +29,21 @@
             return acc;
         }, [] as number[]);
 
-        console.log(`unknowns`, unknowns);
         const number = parseInt('1'.repeat(unknowns.length), 2) + 1;
-        console.log(`number`, number);
 
-        // for (let i = 0; i < number; i++) {
-        //     let newLine = config.springData;
-        //     const binaryNumber = i.toString(2);
-        //     const replacements = (''.padStart(unknowns.length - binaryNumber.length, '0') + binaryNumber).replaceAll('0', OPERATIONAL).replaceAll('1', DAMAGED);
-        //
-        //     for (let i = 0; i < replacements.length; i++) {
-        //         newLine = newLine.replace('?', replacements[i]);
-        //     }
-        //
-        //     if (lineMatchesConfig(newLine, config.config)) {
-        //         possibilities++;
-        //     }
-        // }
+        for (let i = 0; i < number; i++) {
+            let newLine = config.springData;
+            const binaryNumber = i.toString(2);
+            const replacements = (''.padStart(unknowns.length - binaryNumber.length, '0') + binaryNumber).replaceAll('0', OPERATIONAL).replaceAll('1', DAMAGED);
+
+            for (let i = 0; i < replacements.length; i++) {
+                newLine = newLine.replace('?', replacements[i]);
+            }
+
+            if (lineMatchesConfig(newLine, config.config)) {
+                possibilities++;
+            }
+        }
 
         return possibilities;
     }
@@ -58,9 +56,7 @@
     let arrangements = 0;
 
     lines.forEach((line) => {
-        const config = getConfig(line, true);
-        console.log(`config`, config);
-
+        const config = getConfig(line, false);
         arrangements += getAllPossibleLines(config);
     });
 
