@@ -4,19 +4,18 @@
     const start = performance.now();
     const OPERATIONAL = '.';
     const DAMAGED = '#';
-    const UNKNOWN = '?';
 
     function getTargetConfig(line: string) {
         const [ _, configData ] = line.split(' ');
         return configData.split(',').map((x) => parseInt(x));
     }
 
-    function getAllPossibleLines(line: string) {
-        const lines = new Set<string>();
+    function getAllPossibleLines(line: string, config: number[]) {
+        let possibilities = 0;
         const unknowns = line.replaceAll(/[^\?]/g, '').length;
-        const number = parseInt('1'.repeat(unknowns), 2);
+        const number = parseInt('1'.repeat(unknowns), 2) + 1;
 
-        for (let i = 0; i <= number; i++) {
+        for (let i = 0; i < number; i++) {
             let newLine = line;
             const binaryNumber = i.toString(2);
             const replacementArray = (''.padStart(unknowns - binaryNumber.length, '0') + binaryNumber).replaceAll('0', OPERATIONAL).replaceAll('1', DAMAGED).split('');
@@ -25,10 +24,12 @@
                 newLine = newLine.replace('?', char);
             });
 
-            lines.add(newLine);
+            if (lineMatchesConfig(newLine, config)) {
+                possibilities++;
+            }
         }
 
-        return Array.from(lines);
+        return possibilities;
     }
 
     function lineMatchesConfig(line: string, config: number[]) {
@@ -49,21 +50,9 @@
     let arrangements = 0;
 
     lines.forEach((line) => {
-        const config = getTargetConfig(line);
-        const possibleLines = getAllPossibleLines(line);
-        let lineArrangements = 0;
-
-        possibleLines.forEach((possibleLine) => {
-            if (lineMatchesConfig(possibleLine, config)) {
-                lineArrangements++;
-            }
-        });
-
-        console.log(`lineArrangements`, lineArrangements);
-        arrangements += lineArrangements;
+        arrangements += getAllPossibleLines(line, getTargetConfig(line));
     });
 
     console.log(`arrangements`, arrangements);
-
     console.log(`time`, performance.now() - start);
 })();
