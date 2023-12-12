@@ -25,7 +25,7 @@
     }
 
     let arrangements = 0;
-    const string = '.??..??...?## 1,1,3';
+    const string = '?###???????? 3,2,1';
     const config = getConfig(string, false);
 
     console.log(`config`, config);
@@ -52,7 +52,7 @@
 
     const checks = config.blocks.reduce((acc, block) => acc * block.intervals.length, 1);
     console.log(`checks`, checks);
-    const linesToCheck: { from: number, to: number }[][] = [];
+    const linesToCheck = new Set<string>;
 
     for (let i = 0; i < checks; i++) {
         const line: { from: number, to: number }[] = [];
@@ -72,9 +72,16 @@
             line.push(interval);
         });
 
-        if (line.length === config.blocks.length) {
-            linesToCheck.push(line);
+        if (line.length !== config.blocks.length) {
+            continue;
         }
+
+        const tos = line.map((l) => l.to);
+        if (line.some((l) => tos.includes(l.from))) {
+            continue;
+        }
+
+        linesToCheck.add(line.sort((a, b) => a.from - b.from).map((l) => `${l.from},${l.to}`).join(' '));
     }
 
     console.log(`linesToCheck`, linesToCheck);
