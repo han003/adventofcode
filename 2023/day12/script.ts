@@ -21,14 +21,22 @@
 
     function getAllPossibleLines(config: SpringConfig) {
         let possibilities = 0;
-        const unknowns = config.springData.split('').filter((char) => char === '?').length;
-        const number = parseInt('1'.repeat(unknowns), 2) + 1;
+        const unknowns = config.springData.split('').reduce((acc, char, index) => {
+            if (char === '?') {
+                acc.push(index);
+            }
+
+            return acc;
+        }, [] as number[]);
+
+        console.log(`unknowns`, unknowns);
+        const number = parseInt('1'.repeat(unknowns.length), 2) + 1;
         console.log(`number`, number);
 
         for (let i = 0; i < number; i++) {
             let newLine = config.springData;
             const binaryNumber = i.toString(2);
-            const replacements = (''.padStart(unknowns - binaryNumber.length, '0') + binaryNumber).replaceAll('0', OPERATIONAL).replaceAll('1', DAMAGED);
+            const replacements = (''.padStart(unknowns.length - binaryNumber.length, '0') + binaryNumber).replaceAll('0', OPERATIONAL).replaceAll('1', DAMAGED);
 
             for (let i = 0; i < replacements.length; i++) {
                 newLine = newLine.replace('?', replacements[i]);
@@ -43,18 +51,8 @@
     }
 
     function lineMatchesConfig(line: string, config: number[]) {
-        const matches = Array.from(line.matchAll(/\.?(#+)\.?/g));
-        if (matches.length !== config.length) {
-            return false;
-        }
-
-        for (let i = 0; i < matches.length; i++) {
-            if (matches[i][1].length !== config[i]) {
-                return false;
-            }
-        }
-
-        return true;
+        const split = line.split('.').filter((x) => x.length);
+        return split.every((x, i) => x.length === config[i]);
     }
 
     let arrangements = 0;
