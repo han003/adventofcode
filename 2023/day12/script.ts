@@ -6,9 +6,11 @@
     const UNKNOWN = '?';
     const DAMAGED = '#';
 
+    type Block = { size: number, intervals: { from: number, to: number }[] };
+
     interface SpringConfig {
         line: string;
-        blocks: { size: number, intervals: {from: number, to: number}[] }[];
+        blocks: Block[];
     }
 
     function getConfig(line: string, unfold: boolean): SpringConfig {
@@ -29,19 +31,18 @@
     console.log(`config`, config);
 
     config.blocks.forEach(block => {
-        const intervals: number[][] = [];
+        // console.log(`block`, block);
 
-        console.log(`block`, block);
         // Find where block can exist on the
         config.line.split('').forEach((_, i, arr) => {
             const previous = (i > 0 ? [arr[i - 1]] : []).map((x) => x === UNKNOWN ? OPERATIONAL : x);
             const current = arr.slice(i, i + block.size).map((x) => x === UNKNOWN ? DAMAGED : x);
             const next = arr.slice(i + block.size, i + block.size + 1).map((x) => x === UNKNOWN ? OPERATIONAL : x);
-            console.log(previous, current, next);
+            // console.log(previous, current, next);
 
             const fits = current.length === block.size && current.every((x) => x === DAMAGED) && next[0] !== DAMAGED && previous[0] !== DAMAGED;
             if (fits) {
-                console.log(`fits`, i, i + block.size);
+                // console.log(`fits`, i, i + block.size);
                 block.intervals.push({from: i, to: i + block.size});
             }
         });
@@ -49,8 +50,34 @@
 
     console.log(`config`, config);
 
+    const checks = config.blocks.reduce((acc, block) => acc * block.intervals.length, 1);
+    console.log(`checks`, checks);
+    const linesToCheck: { from: number, to: number }[][] = [];
 
+    for (let i = 0; i < checks; i++) {
+        const line: { from: number, to: number }[] = [];
 
+        config.blocks.forEach((block, blockIndex) => {
+            let index = i % block.intervals.length;
+
+            if (blockIndex > 0) {
+                index = Math.floor((i / block.intervals.length)) % block.intervals.length;
+            }
+
+            const interval = block.intervals[index];
+            if (line.some((l) => l.from === interval.from && l.to === interval.to)) {
+                return;
+            }
+
+            line.push(interval);
+        });
+
+        if (line.length === config.blocks.length) {
+            linesToCheck.push(line);
+        }
+    }
+
+    console.log(`linesToCheck`, linesToCheck);
 
     console.log(`arrangements`, arrangements);
     console.log(`time`, performance.now() - start);
