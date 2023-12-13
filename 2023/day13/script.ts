@@ -39,7 +39,6 @@
     }
 
     function checkMirrorable(groupArr: string[][], lineIndex: number, charIndex: number, increment: number) {
-        console.log(charIndex, '---------------------------');
         const isLastLine = lineIndex === groupArr.length - 1;
 
         if (charIndex === 0) {
@@ -52,14 +51,8 @@
 
         const line = groupArr[lineIndex];
 
-        console.log(`line`, line.join(''));
-        console.log(`lineIndex`, lineIndex);
-        console.log(`increment`, increment);
-
         const prev = line[charIndex - 1 - increment];
         const curr = line[charIndex + increment];
-
-        console.log(`prev and curr`, prev, curr);
 
         if (prev === curr && (prev !== undefined || curr !== undefined)) {
             if (isLastLine) {
@@ -92,7 +85,7 @@
         // console.log(`---------------------------------`, );
         const groupArr = group.map((line) => line.split(''))
 
-        // console.log(`groupArr`, groupArr);
+        console.log(`groupArr`, groupArr);
 
         let rotated = null;
         for (let i = 0; i < 2; i++) {
