@@ -1,17 +1,23 @@
 (function () {
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
     const lines = (input.split(/\r?\n/) as string[]);
     const start = performance.now();
 
-    const indexes = lines.reduce((acc, line, i) => line === '' ? acc.concat(i) : acc, [] as number[]);
-    const groups: string[][] = [];
-    let prevIndex = 0;
-    let currentIndex = indexes.shift();
-    while (currentIndex) {
-        groups.push(lines.slice(prevIndex, currentIndex));
-        prevIndex = currentIndex! + 1;
-        currentIndex = indexes.shift();
-    }
+    const groups = [] as string[][];
+
+    let currentGroup = [] as string[];
+    lines.forEach((l, i, a) => {
+        if (l === '') {
+            return;
+        }
+
+        currentGroup.push(l);
+
+        if (a[i + 1] === '') {
+            groups.push(currentGroup.slice(0));
+            currentGroup = [];
+        }
+    })
 
     function rotateN90(a: string[][]) {
         var temp = new Array(a[0].length); // number of columns
@@ -33,39 +39,48 @@
     }
 
     function checkMirrorable(groupArr: string[][], lineIndex: number, charIndex: number, increment: number) {
+        console.log(charIndex, '---------------------------');
+        const isLastLine = lineIndex === groupArr.length - 1;
+
         if (charIndex === 0) {
             return checkMirrorable(groupArr, lineIndex, charIndex + 1, 0);
         }
 
-        if (charIndex === groupArr[lineIndex].length - 1) {
+        if (charIndex === groupArr[0].length) {
             return null;
         }
 
         const line = groupArr[lineIndex];
 
-        // console.log(`line`, line.join(''));
-        // console.log(`line char`, lineIndex, charIndex);
+        console.log(`line`, line.join(''));
+        console.log(`lineIndex`, lineIndex);
+        console.log(`increment`, increment);
 
         const prev = line[charIndex - 1 - increment];
         const curr = line[charIndex + increment];
 
-        // console.log(`prev and curr`, prev, curr);
+        console.log(`prev and curr`, prev, curr);
 
-        // Line finished successfully, check next line
-        if (prev === undefined || curr === undefined) {
-            if (lineIndex === groupArr.length - 1) {
-                return charIndex;
+        if (prev === curr && (prev !== undefined || curr !== undefined)) {
+            if (isLastLine) {
+                return checkMirrorable(groupArr, 0, charIndex, increment + 1);
+            } else {
+                return checkMirrorable(groupArr, lineIndex + 1, charIndex, increment);
             }
-
-            return checkMirrorable(groupArr, lineIndex + 1, charIndex, 0);
+        } else {
+            // One side is outside
+            if (prev === undefined || curr === undefined) {
+                if (isLastLine) {
+                    return charIndex;
+                } else {
+                    return checkMirrorable(groupArr, lineIndex + 1, charIndex, increment);
+                }
+            } else {
+                return checkMirrorable(groupArr, 0, charIndex + 1, 0);
+            }
         }
 
-        // If chars are the same, check next char
-        if (prev === curr) {
-            return checkMirrorable(groupArr, lineIndex, charIndex, increment + 1);
-        } else { // Or update char index and check
-            return checkMirrorable(groupArr, lineIndex, charIndex + 1, 0);
-        }
+        return null;
     }
 
     const mirrors = {
@@ -74,15 +89,13 @@
     }
 
     groups.forEach((group) => {
-        console.log(`---------------------------------`, );
+        // console.log(`---------------------------------`, );
         const groupArr = group.map((line) => line.split(''))
-        const rows = groupArr.length;
-        const cols = groupArr[0].length;
 
         // console.log(`groupArr`, groupArr);
 
         let rotated = null;
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 2; i++) {
             const ans = checkMirrorable(rotated || groupArr, 0, 0, 0);
             const type = ['column', 'row', 'reverse-column', 'reverse-row'][i]
 
@@ -94,40 +107,16 @@
                     case 'row':
                         mirrors.rows.push(ans);
                         break;
-                    case 'reverse-column':
-                        console.log(`ORIGINAL`, );
-                        groupArr.forEach((line) => console.log(line.join('')));
-
-                        console.log(`REVERSE COL`, );
-                        rotated?.forEach((line) => console.log(line.join('')));
-
-                        console.log(`cols`, cols);
-                        console.log(`rows`, rows);
-                        console.log(`ans`, ans);
-                        console.log(`real`, cols - ans);
-
-                        mirrors.cols.push(cols - ans);
-                        break;
-                    case 'reverse-row':
-                        console.log(`ORIGINAL`, );
-                        groupArr.forEach((line) => console.log(line.join('')));
-
-                        console.log(`REVERSE ROW`, );
-                        rotated?.forEach((line) => console.log(line.join('')));
-
-                        console.log(`cols`, cols);
-                        console.log(`rows`, rows);
-                        console.log(`ans`, ans);
-                        console.log(`real`, rows - ans  - 1);
-
-                        mirrors.rows.push(rows - ans  - 1);
-                        break;
                 }
 
                 break;
             }
 
             rotated = rotateN90(rotated || groupArr);
+
+            if (i === 1) {
+                console.log(`no answer`);
+            }
         }
     });
 
