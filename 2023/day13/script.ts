@@ -37,15 +37,19 @@
             return checkMirrorable(groupArr, lineIndex, charIndex + 1, 0);
         }
 
+        if (charIndex === groupArr[lineIndex].length - 1) {
+            return null;
+        }
+
         const line = groupArr[lineIndex];
 
-        console.log(`line`, line.join(''));
-        console.log(`line char`, lineIndex, charIndex);
+        // console.log(`line`, line.join(''));
+        // console.log(`line char`, lineIndex, charIndex);
 
         const prev = line[charIndex - 1 - increment];
         const curr = line[charIndex + increment];
 
-        console.log(`prev and curr`, prev, curr);
+        // console.log(`prev and curr`, prev, curr);
 
         // Line finished successfully, check next line
         if (prev === undefined || curr === undefined) {
@@ -62,21 +66,79 @@
         } else { // Or update char index and check
             return checkMirrorable(groupArr, lineIndex, charIndex + 1, 0);
         }
-
-        return false;
     }
 
-    groups.slice(0, 1).forEach((group) => {
+    const mirrors = {
+        rows: [] as number[],
+        cols: [] as number[],
+    }
+
+    groups.forEach((group) => {
+        console.log(`---------------------------------`, );
         const groupArr = group.map((line) => line.split(''))
-        console.log(`groupArr`, groupArr);
+        const rows = groupArr.length;
+        const cols = groupArr[0].length;
 
-        const mirrorable = checkMirrorable(groupArr, 0, 0, 0)
-        console.log(`mirrorable`, mirrorable);
+        // console.log(`groupArr`, groupArr);
 
-        // const rotated = rotateN90(groupArr);
-        // console.log(`rotated`, rotated);
+        let rotated = null;
+        for (let i = 0; i < 4; i++) {
+            const ans = checkMirrorable(rotated || groupArr, 0, 0, 0);
+            const type = ['column', 'row', 'reverse-column', 'reverse-row'][i]
+
+            if (ans) {
+                switch (type) {
+                    case 'column':
+                        mirrors.cols.push(ans);
+                        break;
+                    case 'row':
+                        mirrors.rows.push(ans);
+                        break;
+                    case 'reverse-column':
+                        console.log(`ORIGINAL`, );
+                        groupArr.forEach((line) => console.log(line.join('')));
+
+                        console.log(`REVERSE COL`, );
+                        rotated?.forEach((line) => console.log(line.join('')));
+
+                        console.log(`cols`, cols);
+                        console.log(`rows`, rows);
+                        console.log(`ans`, ans);
+                        console.log(`real`, cols - ans);
+
+                        mirrors.cols.push(cols - ans);
+                        break;
+                    case 'reverse-row':
+                        console.log(`ORIGINAL`, );
+                        groupArr.forEach((line) => console.log(line.join('')));
+
+                        console.log(`REVERSE ROW`, );
+                        rotated?.forEach((line) => console.log(line.join('')));
+
+                        console.log(`cols`, cols);
+                        console.log(`rows`, rows);
+                        console.log(`ans`, ans);
+                        console.log(`real`, rows - ans  - 1);
+
+                        mirrors.rows.push(rows - ans  - 1);
+                        break;
+                }
+
+                break;
+            }
+
+            rotated = rotateN90(rotated || groupArr);
+        }
     });
 
+    console.log(`mirrors`, mirrors);
+
+    const colSum = mirrors.cols.reduce((acc, col) => acc + col, 0);
+    const rowSum = mirrors.rows.reduce((acc, row) => acc + (row * 100), 0);
+
+    console.log(`colSum`, colSum);
+    console.log(`rowSum`, rowSum);
+    console.log(`sum`, colSum + rowSum);
 
     console.log(`time`, performance.now() - start);
 })();
