@@ -1,10 +1,9 @@
 (function () {
     const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
-    const lines = (input.split(/\r?\n/) as string[]);
     const start = performance.now();
 
+    const lines = (input.split(/\r?\n/) as string[]);
     const groups = [] as string[][];
-
     let currentGroup = [] as string[];
     lines.forEach((l, i, a) => {
         if (l === '') {
@@ -78,13 +77,13 @@
     }
 
     function findAnswerForGroup(groupArr: string[][], originalAnswer?: ['row' | 'col', number]): ['row' | 'col', number] | null {
-        const columnAnswer = checkMirrorable('col', structuredClone(groupArr), 0, 0, 0, originalAnswer);
+        const columnAnswer = checkMirrorable('col', groupArr, 0, 0, 0, originalAnswer);
         let rowAnswer: number | null | undefined = null;
 
         if (columnAnswer) {
             return ['col', columnAnswer];
         } else {
-            rowAnswer = checkMirrorable('row', rotateN90(structuredClone(groupArr)), 0, 0, 0, originalAnswer);
+            rowAnswer = checkMirrorable('row', rotateN90(groupArr), 0, 0, 0, originalAnswer);
 
             if (rowAnswer) {
                 return ['row', rowAnswer];
@@ -94,10 +93,12 @@
         return null;
     }
 
-    function fixSmudge(group: string[], where?: { lineIndex: number, colIndex: number }) {
-        const groupArr = structuredClone(group).map((line) => line.split(''));
-
+    function fixSmudge(groupArr: string[][], previousWhere?: { lineIndex: number, colIndex: number } | null, where?: { lineIndex: number, colIndex: number }) {
         if (where) {
+            if (previousWhere) {
+                groupArr[previousWhere.lineIndex][previousWhere.colIndex] = groupArr[previousWhere.lineIndex][previousWhere.colIndex] === '#' ? '.' : '#';
+            }
+
             groupArr[where.lineIndex][where.colIndex] = groupArr[where.lineIndex][where.colIndex] === '#' ? '.' : '#';
             return groupArr;
         }
@@ -110,11 +111,11 @@
         cols: [] as number[],
     }
 
-    const groupAnswers: Record<number, any> = {};
-
-    groups.forEach((group, index) => {
+    groups.forEach((group) => {
         let hasAnswer = false;
-        const originalAnswer = findAnswerForGroup(fixSmudge(group));
+        let previousSmudgeLocation = null;
+        const groupArr = group.map((line) => line.split(''));
+        const originalAnswer = findAnswerForGroup(fixSmudge(groupArr));
 
         if (!originalAnswer) {
             console.log(`Something very wrong`,);
@@ -127,7 +128,8 @@
             for (let colIndex = 0; colIndex < group[0].length; colIndex++) {
                 if (hasAnswer) break;
 
-                const answer = findAnswerForGroup(fixSmudge(group, {lineIndex, colIndex}), originalAnswer);
+                const answer = findAnswerForGroup(fixSmudge(groupArr, previousSmudgeLocation, {lineIndex, colIndex}), originalAnswer);
+                previousSmudgeLocation = {lineIndex, colIndex};
 
                 if (answer) {
                     hasAnswer = true;
@@ -144,17 +146,9 @@
         }
     });
 
-    console.log(groupAnswers);
-    console.log(`mirrors`, mirrors);
-
     const colSum = mirrors.cols.reduce((acc, col) => acc + col, 0);
     const rowSum = mirrors.rows.reduce((acc, row) => acc + (row * 100), 0);
 
-    console.log(`mirrors.cols.length + mirrors.rows.length`, mirrors.cols.length + mirrors.rows.length);
-
-    console.log(`colSum`, colSum);
-    console.log(`rowSum`, rowSum);
     console.log(`sum`, colSum + rowSum);
-
     console.log(`time`, performance.now() - start);
 })();
