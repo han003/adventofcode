@@ -58,7 +58,18 @@
                 continue;
             }
 
-            moveRoundRock(0, -1, row, col);
+            // moveRoundRock(0, -1, row, col);
+        }
+    }
+
+    // West
+    for (let col = 0; col < columns; col++) {
+        for (let row = 0; row < rows; row++) {
+            if (lines[row][col] !== ROUNDROCK) {
+                continue;
+            }
+
+            moveRoundRock(0, 1, row, col);
         }
     }
 
