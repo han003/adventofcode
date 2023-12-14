@@ -1,5 +1,5 @@
 (function() {
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length).map((l) => l.split(''));
     const start = performance.now();
     const ROUNDROCK = 'O';
@@ -91,9 +91,7 @@
         }
 
         const pattern = getPattern();
-        console.log(`pattern`, pattern);
         const previousPattern = patterns[pattern];
-        console.log(`found`, previousPattern);
 
         if (searchPattern && pattern === searchPattern) {
             patternEndIndex = i;
@@ -108,11 +106,9 @@
             searchPattern = pattern;
         }
 
-
         if (searchPattern) {
             loopPatterns.push(getSum());
         }
-
 
         patterns[pattern] = i;
     }
