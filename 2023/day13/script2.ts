@@ -45,12 +45,11 @@
             return checkMirrorable(type, groupArr, lineIndex, charIndex + 1, 0, originalAnswer);
         }
 
-        if (charIndex === groupArr[0].length) {
+        if (charIndex === groupArr[0].length && isLastLine) {
             return null;
         }
 
         const line = groupArr[lineIndex];
-
         const prev = line[charIndex - 1 - increment];
         const curr = line[charIndex + increment];
 
@@ -64,7 +63,11 @@
             // One side is outside
             if (prev === undefined || curr === undefined) {
                 if (isLastLine) {
-                    return originalAnswer?.[0] === type && originalAnswer[1] === charIndex ? null : charIndex;
+                    if (originalAnswer?.[0] === type && originalAnswer[1] === charIndex) {
+                        return checkMirrorable(type, groupArr, 0, charIndex + 1, 0, originalAnswer)
+                    }
+
+                    return charIndex;
                 } else {
                     return checkMirrorable(type, groupArr, lineIndex + 1, charIndex, increment, originalAnswer);
                 }
@@ -76,7 +79,7 @@
 
     function findAnswerForGroup(groupArr: string[][], originalAnswer?: ['row' | 'col', number]): ['row' | 'col', number] | null {
         const columnAnswer = checkMirrorable('col', structuredClone(groupArr), 0, 0, 0, originalAnswer);
-        let rowAnswer: number | null = null;
+        let rowAnswer: number | null | undefined = null;
 
         if (columnAnswer) {
             return ['col', columnAnswer];
@@ -109,8 +112,8 @@
 
     const groupAnswers: Record<number, any> = {};
 
-    groups.slice(0, 1).forEach((group, index) => {
-        groupAnswers[index] = [];
+    groups.forEach((group, index) => {
+        let hasAnswer = false;
         const originalAnswer = findAnswerForGroup(fixSmudge(group));
 
         if (!originalAnswer) {
@@ -119,14 +122,15 @@
         }
 
         for (let lineIndex = 0; lineIndex < group.length; lineIndex++) {
+            if (hasAnswer) break;
+
             for (let colIndex = 0; colIndex < group[0].length; colIndex++) {
+                if (hasAnswer) break;
+
                 const answer = findAnswerForGroup(fixSmudge(group, {lineIndex, colIndex}), originalAnswer);
 
                 if (answer) {
-                    groupAnswers[index].push(answer);
-                }
-
-                if (answer && !(answer[0] === originalAnswer[0] && answer[1] === originalAnswer[1])) {
+                    hasAnswer = true;
                     switch (answer[0]) {
                         case 'col':
                             mirrors.cols.push(answer[1]);
