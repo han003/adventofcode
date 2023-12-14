@@ -5,11 +5,16 @@
     const ROUNDROCK = 'O';
     const CUBEROCK = '#';
     const EMPTY = '.';
-    const CYCLES = 1000; // 1_000_000_000;
+    const CYCLES = 1_000_000_000;
     const NORTH = 1;
     const SOUTH = -1;
     const EAST = -1;
     const WEST = 1;
+    const patterns: Record<string, number> = {};
+    let searchPattern = '';
+    let patternIndex = 0;
+    let patternEndIndex = 0;
+    const loopPatterns: number[] = [];
 
     function getPattern() {
         return lines.reduce((acc, line) => {
@@ -85,11 +90,39 @@
             }
         }
 
-        if (getSum() === 64) {
-            lines.forEach((line) => console.log(line.join('')));
+        const pattern = getPattern();
+        console.log(`pattern`, pattern);
+        const previousPattern = patterns[pattern];
+        console.log(`found`, previousPattern);
+
+        if (searchPattern && pattern === searchPattern) {
+            patternEndIndex = i;
             break;
         }
+
+
+
+        if (!searchPattern && previousPattern) {
+            console.log(`pattern found at`, i);
+            patternIndex = i;
+            searchPattern = pattern;
+        }
+
+
+        if (searchPattern) {
+            loopPatterns.push(getSum());
+        }
+
+
+        patterns[pattern] = i;
     }
+
+    const remainingCycles = CYCLES - patternIndex;
+    console.log(`remainingCycles`, remainingCycles);
+    const patternLoopIndex = (remainingCycles % loopPatterns.length) - 1;
+    console.log(`patternLoopIndex`, patternLoopIndex);
+    const sum = loopPatterns[patternLoopIndex];
+    console.log(`sum`, sum);
 
     console.log(`time`, performance.now() - start);
 })();
