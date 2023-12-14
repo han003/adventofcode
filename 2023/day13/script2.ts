@@ -75,13 +75,13 @@
     }
 
     function findAnswerForGroup(groupArr: string[][], originalAnswer?: ['row' | 'col', number]): ['row' | 'col', number] | null {
-        const columnAnswer = checkMirrorable('col', groupArr, 0, 0, 0, originalAnswer);
+        const columnAnswer = checkMirrorable('col', structuredClone(groupArr), 0, 0, 0, originalAnswer);
         let rowAnswer: number | null = null;
 
         if (columnAnswer) {
             return ['col', columnAnswer];
         } else {
-            rowAnswer = checkMirrorable('row', rotateN90(groupArr), 0, 0, 0, originalAnswer);
+            rowAnswer = checkMirrorable('row', rotateN90(structuredClone(groupArr)), 0, 0, 0, originalAnswer);
 
             if (rowAnswer) {
                 return ['row', rowAnswer];
@@ -91,39 +91,42 @@
         return null;
     }
 
+    function fixSmudge(group: string[], where?: { lineIndex: number, colIndex: number }) {
+        const groupArr = structuredClone(group).map((line) => line.split(''));
+
+        if (where) {
+            groupArr[where.lineIndex][where.colIndex] = groupArr[where.lineIndex][where.colIndex] === '#' ? '.' : '#';
+            return groupArr;
+        }
+
+        return groupArr;
+    }
+
     const mirrors = {
         rows: [] as number[],
         cols: [] as number[],
     }
 
-    groups.forEach((group) => {
-        let hasAnswer = false;
-        const groupArr = group.map((line) => line.split(''))
-        let previousReplacement: { lineIndex: number, charIndex: number, char: string } | undefined;
-        const originalAnswer = findAnswerForGroup(groupArr);
+    const groupAnswers: Record<number, any> = {};
+
+    groups.slice(0, 1).forEach((group, index) => {
+        groupAnswers[index] = [];
+        const originalAnswer = findAnswerForGroup(fixSmudge(group));
 
         if (!originalAnswer) {
             console.log(`Something very wrong`,);
             return;
         }
 
-        groupArr.forEach((line, lineIndex) => {
-            if (hasAnswer) return;
+        for (let lineIndex = 0; lineIndex < group.length; lineIndex++) {
+            for (let colIndex = 0; colIndex < group[0].length; colIndex++) {
+                const answer = findAnswerForGroup(fixSmudge(group, {lineIndex, colIndex}), originalAnswer);
 
-            line.forEach((char, charIndex) => {
-                if (hasAnswer) return;
-
-                if (previousReplacement) {
-                    groupArr[previousReplacement.lineIndex][previousReplacement.charIndex] = previousReplacement.char;
+                if (answer) {
+                    groupAnswers[index].push(answer);
                 }
 
-                groupArr[lineIndex][charIndex] = char === '#' ? '.' : '#';
-                previousReplacement = {char, lineIndex, charIndex};
-
-                const answer = findAnswerForGroup(groupArr, originalAnswer);
-
                 if (answer && !(answer[0] === originalAnswer[0] && answer[1] === originalAnswer[1])) {
-                    hasAnswer = true;
                     switch (answer[0]) {
                         case 'col':
                             mirrors.cols.push(answer[1]);
@@ -133,25 +136,17 @@
                             break;
                     }
                 }
-            });
-        });
-
-        if (!hasAnswer) {
-            switch (originalAnswer[0]) {
-                case 'col':
-                    mirrors.cols.push(originalAnswer[1]);
-                    break;
-                case 'row':
-                    mirrors.rows.push(originalAnswer[1]);
-                    break;
             }
         }
     });
 
+    console.log(groupAnswers);
     console.log(`mirrors`, mirrors);
 
     const colSum = mirrors.cols.reduce((acc, col) => acc + col, 0);
     const rowSum = mirrors.rows.reduce((acc, row) => acc + (row * 100), 0);
+
+    console.log(`mirrors.cols.length + mirrors.rows.length`, mirrors.cols.length + mirrors.rows.length);
 
     console.log(`colSum`, colSum);
     console.log(`rowSum`, rowSum);
