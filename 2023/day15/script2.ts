@@ -21,42 +21,24 @@
     const boxes: string[][] = Array.from({ length: 256 }, () => []);
     const hashList = input.replaceAll('\r\n', '').split(',');
 
-    hashList.forEach((hash, i, arr) => {
-        console.log(i+1, '/', arr.length);
-        // console.log(`-------------------------------------------------`);
-        // console.log(`${hash} --------------------------------`);
-        // console.log(`-------------------------------------------------`);
-
-        // boxes.forEach((box, index) => {
-        //     if (box.length >= 1) {
-        //         console.log(`box`, index, box);
-        //     }
-        // });
-
+    hashList.forEach((hash) => {
         if (hash.includes('-')) {
             const [ lensLabel, focalStrength ] = hash.split('-');
             const currentBox = hashAlogorithm(lensLabel);
-            // console.log(`box`, currentBox);
-            // console.log(`lensLabel`, lensLabel);
-            // console.log(`focalStrength`, focalStrength);
-
             const sameBox = lensLabelToBoxMap.get(lensLabel) === currentBox;
-            // console.log(`sameBox`, sameBox);
-            if (sameBox) {
-                // console.log(`remove lens from`, currentBox);
-                const lensIndex = lensLabelIndexesMap.get(lensLabel)!;
-                // console.log(`lensIndex`, lensIndex);
-                boxes[currentBox].splice(lensIndex, 1);
 
+            if (sameBox) {
+                const lensIndex = lensLabelIndexesMap.get(lensLabel)!;
+                boxes[currentBox].splice(lensIndex, 1);
                 lensLabelToBoxMap.delete(lensLabel);
                 lensLabelIndexesMap.delete(lensLabel);
-                // console.log(`lensLabelIndexesMap`, lensLabelIndexesMap);
 
                 Array.from(lensLabelToBoxMap.entries()).forEach(([ lensLabel, box ]) => {
                     if (box === currentBox) {
-                        // console.log(`UPDATE INDEX OF`, lensLabel);
-                        const oldIndex = lensLabelIndexesMap.get(lensLabel)!;
-                        lensLabelIndexesMap.set(lensLabel, oldIndex - 1);
+                        const oldIndex = lensLabelIndexesMap.get(lensLabel);
+                        if (oldIndex != undefined && oldIndex > lensIndex) {
+                            lensLabelIndexesMap.set(lensLabel, oldIndex - 1);
+                        }
                     }
                 });
             }
@@ -66,24 +48,17 @@
             const lensLabelWithFocal = `${lensLabel} ${focalStrength}`;
 
             // If box has label already
-            if (lensLabelToBoxMap.get(lensLabel)) {
-                // console.log(`box`, currentBox, 'already has', lensLabel);
-                const lensIndex = lensLabelIndexesMap.get(lensLabel)!;
-                // console.log(`replace`, 'at', lensIndex);
-                // console.log(`lensLabelIndexesMap`, lensLabelIndexesMap);
-                boxes[currentBox].splice(lensIndex, 1, lensLabelWithFocal);
+            if (lensLabelToBoxMap.get(lensLabel) === currentBox) {
+                const lensIndex = lensLabelIndexesMap.get(lensLabel);
+                if (lensIndex != undefined && lensIndex >= 0) {
+                    boxes[currentBox].splice(lensIndex, 1, lensLabelWithFocal);
+                }
             } else {
                 lensLabelToBoxMap.set(lensLabel, currentBox);
-                lensLabelIndexesMap.set(lensLabel, boxes[currentBox].push(lensLabelWithFocal) - 1);
-                // console.log(`lensLabelIndexesMap`, lensLabelIndexesMap);
+                const labelIndex = boxes[currentBox].push(lensLabelWithFocal) - 1;
+                lensLabelIndexesMap.set(lensLabel, labelIndex);
             }
         }
-
-        // boxes.forEach((box, index) => {
-        //     if (box.length >= 1) {
-        //         console.log(`box`, index, box);
-        //     }
-        // });
     });
 
     let sum = 0;
@@ -92,14 +67,12 @@
             return;
         }
 
-        console.log(`box`, boxIndex, box);
         box.forEach((lens, lensIndex) => {
-            const [ lensLabel, focalStrength ] = lens.split(' ');
+            const [ _, focalStrength ] = lens.split(' ');
             sum += (1 + boxIndex) * (lensIndex + 1) * parseInt(focalStrength);
         });
     });
 
     console.log(`sum`, sum);
-
     console.log(`time`, performance.now() - start);
 })();
