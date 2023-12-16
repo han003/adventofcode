@@ -2,11 +2,10 @@
     const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
-    const beams = new Set<number>();
-    const encounteredObstacles = new Map<string, Set<string>>();
+    let encounteredObstacles = new Map<string, Set<string>>();
+
     const energizedTiles = new Set<string>();
     let mostEnergizedTileCount = 0;
-    let beamId = 0;
 
     const horizontalBoard = lines.reduce((acc, line) => {
         acc.push(line.replaceAll('-', '.').split(''))
@@ -18,8 +17,18 @@
         return acc;
     }, [] as string[][]);
 
+    function resetEncounteredObstacles() {
+        encounteredObstacles = new Map<string, Set<string>>(
+            [
+                ['1,0', new Set()],
+                ['0,1', new Set()],
+                ['-1,0', new Set()],
+                ['0,-1', new Set()],
+            ]
+        )
+    }
+
     class Beam {
-        private id = beamId++;
         private board: string[][];
         private rowIncrement = 0;
         private columnIncrement = 0;
@@ -45,9 +54,6 @@
 
             // Energize where we're at
             this.energize();
-
-            // Add beam to the beam tracker
-            beams.add(this.id);
 
             // Move away from the starting point and find the next obstacle
             if (childBeam) {
@@ -82,17 +88,12 @@
             if (obstacle) {
                 const directionKey = `${this.columnIncrement},${this.rowIncrement}`;
                 const obstacleKey = `${this.column},${this.row}`;
+                const directionObstacles = encounteredObstacles.get(directionKey)!;
 
-                if (encounteredObstacles.get(directionKey)?.has(obstacleKey)) {
-                    this.handleEndOfLife();
+                if (directionObstacles.has(obstacleKey)) {
                     return;
-                }
-
-                const setOfEncounteredObstaclesForDirectionKey = encounteredObstacles.get(directionKey);
-                if (setOfEncounteredObstaclesForDirectionKey) {
-                    setOfEncounteredObstaclesForDirectionKey.add(obstacleKey);
                 } else {
-                    encounteredObstacles.set(directionKey, new Set([obstacleKey]));
+                    directionObstacles.add(obstacleKey)
                 }
 
                 if (this.rowIncrement) { // Row is incrementing, so moving up or down
@@ -153,22 +154,13 @@
                     }
                 }
             }
-
-            this.handleEndOfLife();
-        }
-
-
-        handleEndOfLife() {
-            beams.delete(this.id);
         }
     }
 
     const topRow = horizontalBoard[0];
     topRow.forEach((_, index) => {
-        beams.clear();
-        encounteredObstacles.clear();
+        resetEncounteredObstacles();
         energizedTiles.clear();
-        beamId = 0;
 
         new Beam('down', 0, index);
 
@@ -179,10 +171,8 @@
 
     const bottomRow = horizontalBoard[horizontalBoard.length - 1];
     bottomRow.forEach((_, index) => {
-        beams.clear();
-        encounteredObstacles.clear();
+        resetEncounteredObstacles();
         energizedTiles.clear();
-        beamId = 0;
 
         new Beam('up', horizontalBoard.length - 1, index);
 
@@ -193,10 +183,8 @@
 
     const leftColumn = verticalBoard.map((row) => row[0]);
     leftColumn.forEach((_, index) => {
-        beams.clear();
-        encounteredObstacles.clear();
+        resetEncounteredObstacles();
         energizedTiles.clear();
-        beamId = 0;
 
         new Beam('right', index, 0);
 
@@ -207,10 +195,8 @@
 
     const rightColumn = verticalBoard.map((row) => row[row.length - 1]);
     rightColumn.forEach((_, index) => {
-        beams.clear();
-        encounteredObstacles.clear();
+        resetEncounteredObstacles();
         energizedTiles.clear();
-        beamId = 0;
 
         new Beam('left', index, verticalBoard[0].length - 1);
 
