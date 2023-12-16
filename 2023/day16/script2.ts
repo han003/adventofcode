@@ -64,30 +64,6 @@
             }
         }
 
-        logDirection() {
-            if (this.rowIncrement === 1) {
-                console.log(`going down`,);
-            }
-            if (this.rowIncrement === -1) {
-                console.log(`going up`,);
-            }
-            if (this.columnIncrement === 1) {
-                console.log(`going right`,);
-            }
-            if (this.columnIncrement === -1) {
-                console.log(`going left`,);
-            }
-        }
-
-        logBoard() {
-            const board = structuredClone(this.board);
-            board[this.row][this.column] = 'X';
-
-            board.forEach((row) => {
-                console.log(row.join(''));
-            });
-        }
-
         move() {
             this.row += this.rowIncrement;
             this.column += this.columnIncrement;
