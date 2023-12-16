@@ -1,5 +1,5 @@
 (function () {
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
     const beams = new Set<number>();
@@ -187,23 +187,62 @@
         }
     }
 
-    new Beam('right');
+    const topRow = horizontalBoard[0];
+    topRow.forEach((_, index) => {
+        beams.clear();
+        encounteredObstacles.clear();
+        energizedTiles.clear();
+        beamId = 0;
 
-    // const topRow = horizontalBoard[0];
-    // topRow.forEach((_, index) => {
-    //     beams.clear();
-    //     encounteredObstacles.clear();
-    //     energizedTiles.clear();
-    //     beamId = 0;
-    //
-    //     new Beam(1, 0, 0, index);
-    //
-    //     if (energizedTiles.size > mostEnergizedTileCount) {
-    //         mostEnergizedTileCount = energizedTiles.size;
-    //     }
-    // });
+        new Beam('down', 0, index);
 
-    console.log(`energizedTiles`, energizedTiles.size);
+        if (energizedTiles.size > mostEnergizedTileCount) {
+            mostEnergizedTileCount = energizedTiles.size;
+        }
+    });
+
+    const bottomRow = horizontalBoard[horizontalBoard.length - 1];
+    bottomRow.forEach((_, index) => {
+        beams.clear();
+        encounteredObstacles.clear();
+        energizedTiles.clear();
+        beamId = 0;
+
+        new Beam('up', horizontalBoard.length - 1, index);
+
+        if (energizedTiles.size > mostEnergizedTileCount) {
+            mostEnergizedTileCount = energizedTiles.size;
+        }
+    });
+
+    const leftColumn = verticalBoard.map((row) => row[0]);
+    leftColumn.forEach((_, index) => {
+        beams.clear();
+        encounteredObstacles.clear();
+        energizedTiles.clear();
+        beamId = 0;
+
+        new Beam('right', index, 0);
+
+        if (energizedTiles.size > mostEnergizedTileCount) {
+            mostEnergizedTileCount = energizedTiles.size;
+        }
+    });
+
+    const rightColumn = verticalBoard.map((row) => row[row.length - 1]);
+    rightColumn.forEach((_, index) => {
+        beams.clear();
+        encounteredObstacles.clear();
+        energizedTiles.clear();
+        beamId = 0;
+
+        new Beam('left', index, verticalBoard[0].length - 1);
+
+        if (energizedTiles.size > mostEnergizedTileCount) {
+            mostEnergizedTileCount = energizedTiles.size;
+        }
+    });
+
     console.log(`energizedTiles`, mostEnergizedTileCount);
 
     console.log(`time`, performance.now() - start);
