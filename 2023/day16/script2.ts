@@ -24,7 +24,7 @@
         private rowIncrement = 0;
         private columnIncrement = 0;
 
-        constructor(direction: string, protected row: number = 0, protected column: number = 0) {
+        constructor(direction: string, protected row: number = 0, protected column: number = 0, childBeam = false) {
             switch (direction) {
                 case 'down':
                     this.rowIncrement = 1;
@@ -50,7 +50,7 @@
             beams.add(this.id);
 
             // Move away from the starting point and find the next obstacle
-            if (this.id > 0) {
+            if (childBeam) {
                 this.move();
             }
 
@@ -99,27 +99,27 @@
                     if (this.rowIncrement === 1) { // Moving down
                         switch (obstacle) {
                             case '-':
-                                new Beam('left', this.row, this.column);
-                                new Beam('right', this.row, this.column);
+                                new Beam('left', this.row, this.column, true);
+                                new Beam('right', this.row, this.column, true);
                                 break;
                             case '/':
-                                new Beam('left', this.row, this.column);
+                                new Beam('left', this.row, this.column, true);
                                 break;
                             case '\\':
-                                new Beam('right', this.row, this.column);
+                                new Beam('right', this.row, this.column, true);
                                 break;
                         }
                     } else { // Moving up
                         switch (obstacle) {
                             case '-':
-                                new Beam('left', this.row, this.column);
-                                new Beam('right', this.row, this.column);
+                                new Beam('left', this.row, this.column, true);
+                                new Beam('right', this.row, this.column, true);
                                 break;
                             case '/':
-                                new Beam('right', this.row, this.column);
+                                new Beam('right', this.row, this.column, true);
                                 break;
                             case '\\':
-                                new Beam('left', this.row, this.column);
+                                new Beam('left', this.row, this.column, true);
                                 break;
                         }
                     }
@@ -127,27 +127,27 @@
                     if (this.columnIncrement === 1) { // Moving right
                         switch (obstacle) {
                             case '|':
-                                new Beam('up', this.row, this.column);
-                                new Beam('down', this.row, this.column);
+                                new Beam('up', this.row, this.column, true);
+                                new Beam('down', this.row, this.column, true);
                                 break;
                             case '/':
-                                new Beam('up', this.row, this.column);
+                                new Beam('up', this.row, this.column, true);
                                 break;
                             case '\\':
-                                new Beam('down', this.row, this.column);
+                                new Beam('down', this.row, this.column, true);
                                 break;
                         }
                     } else { // Moving left
                         switch (obstacle) {
                             case '|':
-                                new Beam('up', this.row, this.column);
-                                new Beam('down', this.row, this.column);
+                                new Beam('up', this.row, this.column, true);
+                                new Beam('down', this.row, this.column, true);
                                 break;
                             case '/':
-                                new Beam('down', this.row, this.column);
+                                new Beam('down', this.row, this.column, true);
                                 break;
                             case '\\':
-                                new Beam('up', this.row, this.column);
+                                new Beam('up', this.row, this.column, true);
                                 break;
                         }
                     }
