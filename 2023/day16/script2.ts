@@ -24,7 +24,7 @@
         private rowIncrement = 0;
         private columnIncrement = 0;
 
-        constructor(private direction: string, protected row: number = 0, protected column: number = 0) {
+        constructor(direction: string, protected row: number = 0, protected column: number = 0) {
             switch (direction) {
                 case 'down':
                     this.rowIncrement = 1;
