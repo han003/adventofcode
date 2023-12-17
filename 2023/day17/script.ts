@@ -3,7 +3,6 @@
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
     const board = lines.map(l => l.split('').map(s => parseInt(s)));
-    let activeEmitters = 0;
     let currentLowest = Infinity;
     let iterations = 0;
 
@@ -17,64 +16,43 @@
             private largestRow: number,
             private largestColumn: number,
         ) {
-            activeEmitters++;
             iterations++;
 
             if (row === board.length - 1 && column === board[0].length) {
-                // console.log(`DONE THIS`, this.sum);
-                // console.log(`row`, row);
-                // console.log(`column`, column);
                 if (this.sum < currentLowest) {
                     currentLowest = this.sum;
                     this.drawPath();
                 }
 
-                activeEmitters--;
                 return;
             }
 
             const tileValue = board[row]?.[column];
             if (tileValue == null) {
-                // console.log(`No tile`,);
-                activeEmitters--;
                 return;
             }
 
             if (this.hasVisited(this.getTileKey())) {
-                // console.log(`already visited`, this.getTileKey());
-                activeEmitters--;
                 return
             }
 
             if (row < largestRow && (largestRow - row) > 1) {
-                // console.log(`too far up`);
-                activeEmitters--;
                 return;
             }
 
             if (column < largestColumn && (largestColumn - column) > 1) {
-                // console.log(`too far left`);
-                activeEmitters--;
                 return;
             }
 
             if (this.sum >= currentLowest) {
-                // console.log(`sum will exceed`);
-                activeEmitters--;
                 return;
             }
 
             const newSum = sum + tileValue;
-
-            // console.log(`this`, this);
-            // console.log(`activeEmitters`, activeEmitters);
-
-
             if (iterations > 100_000_000) {
                 console.log(`max iterations`,);
                 return;
             }
-
 
             if (this.canGoLeft) {
                 new Emitter(
@@ -123,8 +101,6 @@
                     this.largestColumn,
                 );
             }
-
-            activeEmitters--;
         }
 
         drawPath() {
@@ -154,25 +130,25 @@
         get canGoLeft() {
             const hasAbove = this.hasVisited(this.getTileKey(this.row - 1, this.column));
             const hasAboveLeft = this.hasVisited(this.getTileKey(this.row - 1, this.column - 1));
-            return !this.hasThreeLeftPrevious;
+            return !this.hasThreeLeftPrevious && !(hasAbove && hasAboveLeft);
         }
 
         get canGoRight() {
             const hasAbove = this.hasVisited(this.getTileKey(this.row - 1, this.column));
             const hasAboveRight = this.hasVisited(this.getTileKey(this.row - 1, this.column + 1));
-            return !this.hasThreeRightPrevious;
+            return !this.hasThreeRightPrevious && !(hasAbove && hasAboveRight);
         }
 
         get canGoUp() {
             const hasLeft = this.hasVisited(this.getTileKey(this.row, this.column - 1));
             const hasAboveLeft = this.hasVisited(this.getTileKey(this.row - 1, this.column - 1));
-            return !this.hasThreeUpPrevious;
+            return !this.hasThreeUpPrevious && !(hasLeft && hasAboveLeft);
         }
 
         get canGoDown() {
             const hasLeft = this.hasVisited(this.getTileKey(this.row, this.column - 1));
             const hasBelowLeft = this.hasVisited(this.getTileKey(this.row + 1, this.column - 1));
-            return !this.hasThreeDownPrevious;
+            return !this.hasThreeDownPrevious && !(hasLeft && hasBelowLeft);
         }
 
         get hasThreeRightPrevious() {
@@ -196,6 +172,5 @@
 
     console.log(`Lowest:`, currentLowest);
     console.log(`Iterations:`, iterations);
-    console.log(`Active emitters:`, activeEmitters);
     console.log(`Time:`, performance.now() - start);
 })();
