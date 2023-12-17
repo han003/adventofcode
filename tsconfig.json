@@ -1,10 +1,15 @@
 {
-  "compileOnSave": false,
+  "compileOnSave": true,
+  "include": [
+    "./**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
   "compilerOptions": {
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "baseUrl": "./",
-    "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitOverride": true,
@@ -27,11 +32,5 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "useDefineForClassFields": false
-  },
-  "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictTemplates": true
   }
 }
