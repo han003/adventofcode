@@ -14,12 +14,17 @@
             this.path = path;
             this.largestRow = largestRow;
             this.largestColumn = largestColumn;
-            iterations++;
             if (row === board.length - 1 && column === board[0].length) {
                 if (this.sum < currentLowest) {
                     currentLowest = this.sum;
                     this.drawPath();
                 }
+                return;
+            }
+            if (row < largestRow && (largestRow - row) > 1) {
+                return;
+            }
+            if (column < largestColumn && (largestColumn - column) > 1) {
                 return;
             }
             const tileValue = board[row]?.[column];
@@ -29,27 +34,23 @@
             if (this.hasVisited(this.getTileKey())) {
                 return;
             }
-            if (row < largestRow && (largestRow - row) > 1) {
-                return;
-            }
-            if (column < largestColumn && (largestColumn - column) > 1) {
-                return;
-            }
-            if (this.sum >= currentLowest) {
-                return;
-            }
             const newSum = sum + tileValue;
+            if (newSum >= currentLowest) {
+                return;
+            }
+            const newLargestRow = row > this.largestRow ? row : this.largestRow;
+            const newLargestColumn = column > this.largestColumn ? column : this.largestColumn;
             if (this.canGoLeft) {
-                new Emitter(row, column - 1, newSum, path.concat(this.getTileKey()), this.largestRow, Math.max(this.largestColumn, column));
+                new Emitter(row, column - 1, newSum, path.concat(this.getTileKey()), newLargestRow, newLargestColumn);
             }
             if (this.canGoDown) {
-                new Emitter(row + 1, column, newSum, path.concat(this.getTileKey()), Math.max(this.largestRow, row), this.largestColumn);
+                new Emitter(row + 1, column, newSum, path.concat(this.getTileKey()), newLargestRow, newLargestColumn);
             }
             if (this.canGoRight) {
-                new Emitter(row, column + 1, newSum, path.concat(this.getTileKey()), this.largestRow, Math.max(this.largestColumn, column));
+                new Emitter(row, column + 1, newSum, path.concat(this.getTileKey()), newLargestRow, newLargestColumn);
             }
             if (this.canGoUp) {
-                new Emitter(row - 1, column, newSum, path.concat(this.getTileKey()), Math.max(this.largestRow, row), this.largestColumn);
+                new Emitter(row - 1, column, newSum, path.concat(this.getTileKey()), newLargestRow, newLargestColumn);
             }
         }
         drawPath() {

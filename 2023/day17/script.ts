@@ -15,14 +15,20 @@
             private largestRow: number,
             private largestColumn: number,
         ) {
-            iterations++;
-
             if (row === board.length - 1 && column === board[0].length) {
                 if (this.sum < currentLowest) {
                     currentLowest = this.sum;
                     this.drawPath();
                 }
 
+                return;
+            }
+
+            if (row < largestRow && (largestRow - row) > 1) {
+                return;
+            }
+
+            if (column < largestColumn && (largestColumn - column) > 1) {
                 return;
             }
 
@@ -35,27 +41,22 @@
                 return
             }
 
-            if (row < largestRow && (largestRow - row) > 1) {
-                return;
-            }
-
-            if (column < largestColumn && (largestColumn - column) > 1) {
-                return;
-            }
-
-            if (this.sum >= currentLowest) {
-                return;
-            }
-
             const newSum = sum + tileValue;
+            if (newSum >= currentLowest) {
+                return;
+            }
+
+            const newLargestRow = row > this.largestRow ? row : this.largestRow;
+            const newLargestColumn = column > this.largestColumn ? column : this.largestColumn;
+
             if (this.canGoLeft) {
                 new Emitter(
                     row,
                     column - 1,
                     newSum,
                     path.concat(this.getTileKey()),
-                    this.largestRow,
-                    Math.max(this.largestColumn, column),
+                    newLargestRow,
+                    newLargestColumn,
                 );
             }
 
@@ -65,8 +66,8 @@
                     column,
                     newSum,
                     path.concat(this.getTileKey()),
-                    Math.max(this.largestRow, row),
-                    this.largestColumn,
+                    newLargestRow,
+                    newLargestColumn,
                 );
             }
 
@@ -76,8 +77,8 @@
                     column + 1,
                     newSum,
                     path.concat(this.getTileKey()),
-                    this.largestRow,
-                    Math.max(this.largestColumn, column),
+                    newLargestRow,
+                    newLargestColumn,
                 );
             }
 
@@ -87,8 +88,8 @@
                     column,
                     newSum,
                     path.concat(this.getTileKey()),
-                    Math.max(this.largestRow, row),
-                    this.largestColumn,
+                    newLargestRow,
+                    newLargestColumn,
                 );
             }
         }
