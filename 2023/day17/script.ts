@@ -8,7 +8,6 @@
 
     class Emitter {
         constructor(
-            private board: number[][],
             private row: number,
             private column: number,
             private sum: number,
@@ -49,14 +48,8 @@
             }
 
             const newSum = sum + tileValue;
-            if (iterations > 100_000_000) {
-                console.log(`max iterations`,);
-                return;
-            }
-
             if (this.canGoLeft) {
                 new Emitter(
-                    board,
                     row,
                     column - 1,
                     newSum,
@@ -68,7 +61,6 @@
 
             if (this.canGoDown) {
                 new Emitter(
-                    board,
                     row + 1,
                     column,
                     newSum,
@@ -80,7 +72,6 @@
 
             if (this.canGoRight) {
                 new Emitter(
-                    board,
                     row,
                     column + 1,
                     newSum,
@@ -92,7 +83,6 @@
 
             if (this.canGoUp) {
                 new Emitter(
-                    board,
                     row - 1,
                     column,
                     newSum,
@@ -105,15 +95,15 @@
 
         drawPath() {
             const path = this.path;
-            const board: (number | string)[][] = structuredClone(this.board);
+            const clonedBoard: (number | string)[][] = structuredClone(board);
 
             path.forEach((tileKey) => {
                 const [row, column] = tileKey.split(',').map(s => parseInt(s));
-                board[row][column] = '.';
+                clonedBoard[row][column] = '.';
             });
 
             console.group('Path, ' + this.sum);
-            board.forEach((row) => {
+            clonedBoard.forEach((row) => {
                 console.log(row.join(''));
             });
             console.groupEnd();
@@ -168,7 +158,7 @@
         }
     }
 
-    new Emitter(board, 0, 0, -board[0][0], [], 0, 0);
+    new Emitter(0, 0, -board[0][0], [], 0, 0);
 
     console.log(`Lowest:`, currentLowest);
     console.log(`Iterations:`, iterations);

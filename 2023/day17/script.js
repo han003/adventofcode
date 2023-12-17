@@ -7,8 +7,7 @@
     let currentLowest = Infinity;
     let iterations = 0;
     class Emitter {
-        constructor(board, row, column, sum, path, largestRow, largestColumn) {
-            this.board = board;
+        constructor(row, column, sum, path, largestRow, largestColumn) {
             this.row = row;
             this.column = column;
             this.sum = sum;
@@ -40,32 +39,28 @@
                 return;
             }
             const newSum = sum + tileValue;
-            if (iterations > 100000000) {
-                console.log(`max iterations`);
-                return;
-            }
             if (this.canGoLeft) {
-                new Emitter(board, row, column - 1, newSum, path.concat(this.getTileKey()), this.largestRow, Math.max(this.largestColumn, column));
+                new Emitter(row, column - 1, newSum, path.concat(this.getTileKey()), this.largestRow, Math.max(this.largestColumn, column));
             }
             if (this.canGoDown) {
-                new Emitter(board, row + 1, column, newSum, path.concat(this.getTileKey()), Math.max(this.largestRow, row), this.largestColumn);
+                new Emitter(row + 1, column, newSum, path.concat(this.getTileKey()), Math.max(this.largestRow, row), this.largestColumn);
             }
             if (this.canGoRight) {
-                new Emitter(board, row, column + 1, newSum, path.concat(this.getTileKey()), this.largestRow, Math.max(this.largestColumn, column));
+                new Emitter(row, column + 1, newSum, path.concat(this.getTileKey()), this.largestRow, Math.max(this.largestColumn, column));
             }
             if (this.canGoUp) {
-                new Emitter(board, row - 1, column, newSum, path.concat(this.getTileKey()), Math.max(this.largestRow, row), this.largestColumn);
+                new Emitter(row - 1, column, newSum, path.concat(this.getTileKey()), Math.max(this.largestRow, row), this.largestColumn);
             }
         }
         drawPath() {
             const path = this.path;
-            const board = structuredClone(this.board);
+            const clonedBoard = structuredClone(board);
             path.forEach((tileKey) => {
                 const [row, column] = tileKey.split(',').map(s => parseInt(s));
-                board[row][column] = '.';
+                clonedBoard[row][column] = '.';
             });
             console.group('Path, ' + this.sum);
-            board.forEach((row) => {
+            clonedBoard.forEach((row) => {
                 console.log(row.join(''));
             });
             console.groupEnd();
@@ -109,7 +104,7 @@
             return this.hasVisited(this.getTileKey(this.row, this.column + 1)) && this.hasVisited(this.getTileKey(this.row, this.column + 2)) && this.hasVisited(this.getTileKey(this.row, this.column + 3));
         }
     }
-    new Emitter(board, 0, 0, -board[0][0], [], 0, 0);
+    new Emitter(0, 0, -board[0][0], [], 0, 0);
     console.log(`Lowest:`, currentLowest);
     console.log(`Iterations:`, iterations);
     console.log(`Time:`, performance.now() - start);
