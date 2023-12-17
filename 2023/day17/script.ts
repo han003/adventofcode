@@ -12,7 +12,6 @@
             private board: number[][],
             private row: number,
             private column: number,
-            private visited: Map<string, number>,
             private sum: number,
             private path: string[],
             private largestRow: number,
@@ -27,7 +26,6 @@
                 // console.log(`column`, column);
                 if (this.sum < currentLowest) {
                     currentLowest = this.sum;
-
                     this.drawPath();
                 }
 
@@ -42,7 +40,7 @@
                 return;
             }
 
-            if (visited.has(this.getTileKey())) {
+            if (this.hasVisited(this.getTileKey())) {
                 // console.log(`already visited`, this.getTileKey());
                 activeEmitters--;
                 return
@@ -67,39 +65,25 @@
             }
 
             const newSum = sum + tileValue;
-            visited.set(this.getTileKey(), tileValue);
 
             // console.log(`this`, this);
             // console.log(`activeEmitters`, activeEmitters);
 
 
             if (iterations > 100_000_000) {
-                // this.drawPath();
+                console.log(`max iterations`,);
                 return;
             }
+
 
             if (this.canGoLeft) {
                 new Emitter(
                     board,
                     row,
                     column - 1,
-                    new Map(visited),
                     newSum,
                     path.concat(this.getTileKey()),
-                    Math.max(this.largestRow, row),
-                    Math.max(this.largestColumn, column),
-                );
-            }
-
-            if (this.canGoRight) {
-                new Emitter(
-                    board,
-                    row,
-                    column + 1,
-                    new Map(visited),
-                    newSum,
-                    path.concat(this.getTileKey()),
-                    Math.max(this.largestRow, row),
+                    this.largestRow,
                     Math.max(this.largestColumn, column),
                 );
             }
@@ -109,10 +93,21 @@
                     board,
                     row + 1,
                     column,
-                    new Map(visited),
                     newSum,
                     path.concat(this.getTileKey()),
                     Math.max(this.largestRow, row),
+                    this.largestColumn,
+                );
+            }
+
+            if (this.canGoRight) {
+                new Emitter(
+                    board,
+                    row,
+                    column + 1,
+                    newSum,
+                    path.concat(this.getTileKey()),
+                    this.largestRow,
                     Math.max(this.largestColumn, column),
                 );
             }
@@ -122,11 +117,10 @@
                     board,
                     row - 1,
                     column,
-                    new Map(visited),
                     newSum,
                     path.concat(this.getTileKey()),
                     Math.max(this.largestRow, row),
-                    Math.max(this.largestColumn, column),
+                    this.largestColumn,
                 );
             }
 
@@ -142,7 +136,7 @@
                 board[row][column] = '.';
             });
 
-            console.group('Path');
+            console.group('Path, ' + this.sum);
             board.forEach((row) => {
                 console.log(row.join(''));
             });
@@ -153,48 +147,52 @@
             return `${row ?? this.row},${column ?? this.column}`;
         }
 
+        hasVisited(key: string) {
+            return this.path.includes(key);
+        }
+
         get canGoLeft() {
-            const hasAbove = this.visited.has(this.getTileKey(this.row - 1, this.column));
-            const hasAboveLeft = this.visited.has(this.getTileKey(this.row - 1, this.column - 1));
-            return !this.hasThreeLeftPrevious && !(hasAbove && hasAboveLeft);
+            const hasAbove = this.hasVisited(this.getTileKey(this.row - 1, this.column));
+            const hasAboveLeft = this.hasVisited(this.getTileKey(this.row - 1, this.column - 1));
+            return !this.hasThreeLeftPrevious;
         }
 
         get canGoRight() {
-            const hasAbove = this.visited.has(this.getTileKey(this.row - 1, this.column));
-            const hasAboveRight = this.visited.has(this.getTileKey(this.row - 1, this.column + 1));
-            return !this.hasThreeRightPrevious && !(hasAbove && hasAboveRight);
+            const hasAbove = this.hasVisited(this.getTileKey(this.row - 1, this.column));
+            const hasAboveRight = this.hasVisited(this.getTileKey(this.row - 1, this.column + 1));
+            return !this.hasThreeRightPrevious;
         }
 
         get canGoUp() {
-            const hasLeft = this.visited.has(this.getTileKey(this.row, this.column - 1));
-            const hasAboveLeft = this.visited.has(this.getTileKey(this.row - 1, this.column - 1));
-            return !this.hasThreeUpPrevious && !(hasLeft && hasAboveLeft);
+            const hasLeft = this.hasVisited(this.getTileKey(this.row, this.column - 1));
+            const hasAboveLeft = this.hasVisited(this.getTileKey(this.row - 1, this.column - 1));
+            return !this.hasThreeUpPrevious;
         }
 
         get canGoDown() {
-            const hasLeft = this.visited.has(this.getTileKey(this.row, this.column - 1));
-            const hasBelowLeft = this.visited.has(this.getTileKey(this.row + 1, this.column - 1));
-            return !this.hasThreeDownPrevious && !(hasLeft && hasBelowLeft);
+            const hasLeft = this.hasVisited(this.getTileKey(this.row, this.column - 1));
+            const hasBelowLeft = this.hasVisited(this.getTileKey(this.row + 1, this.column - 1));
+            return !this.hasThreeDownPrevious;
         }
 
         get hasThreeRightPrevious() {
-            return this.visited.has(this.getTileKey(this.row, this.column - 1)) && this.visited.has(this.getTileKey(this.row, this.column - 2)) && this.visited.has(this.getTileKey(this.row, this.column - 3));
+            return this.hasVisited(this.getTileKey(this.row, this.column - 1)) && this.hasVisited(this.getTileKey(this.row, this.column - 2)) && this.hasVisited(this.getTileKey(this.row, this.column - 3));
         }
 
         get hasThreeDownPrevious() {
-            return this.visited.has(this.getTileKey(this.row - 1, this.column)) && this.visited.has(this.getTileKey(this.row - 2, this.column)) && this.visited.has(this.getTileKey(this.row - 3, this.column));
+            return this.hasVisited(this.getTileKey(this.row - 1, this.column)) && this.hasVisited(this.getTileKey(this.row - 2, this.column)) && this.hasVisited(this.getTileKey(this.row - 3, this.column));
         }
 
         get hasThreeUpPrevious() {
-            return this.visited.has(this.getTileKey(this.row + 1, this.column)) && this.visited.has(this.getTileKey(this.row + 2, this.column)) && this.visited.has(this.getTileKey(this.row + 3, this.column));
+            return this.hasVisited(this.getTileKey(this.row + 1, this.column)) && this.hasVisited(this.getTileKey(this.row + 2, this.column)) && this.hasVisited(this.getTileKey(this.row + 3, this.column));
         }
 
         get hasThreeLeftPrevious() {
-            return this.visited.has(this.getTileKey(this.row, this.column + 1)) && this.visited.has(this.getTileKey(this.row, this.column + 2)) && this.visited.has(this.getTileKey(this.row, this.column + 3));
+            return this.hasVisited(this.getTileKey(this.row, this.column + 1)) && this.hasVisited(this.getTileKey(this.row, this.column + 2)) && this.hasVisited(this.getTileKey(this.row, this.column + 3));
         }
     }
 
-    new Emitter(board, 0, 0, new Map(), 0, [], 0, 0);
+    new Emitter(board, 0, 0, -board[0][0], [], 0, 0);
 
     console.log(`Lowest:`, currentLowest);
     console.log(`Iterations:`, iterations);
