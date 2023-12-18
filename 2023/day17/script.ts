@@ -1,4 +1,4 @@
-(function() {
+(function () {
     const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
@@ -7,37 +7,48 @@
     interface QueueEntry {
         row: number,
         col: number,
-        priority: number,
         coords: Coords,
+        move: number,
+        heat: number,
     }
 
-    function getNeighbors(coords: Coords, board: number[][]) {
+    function getNeighbors(row: number, col: number, board: number[][], path: Map<string, QueueEntry | null>) {
+        console.log(`Get neighbors for`, row, col);
         const neighbors: Coords[] = [];
 
         // Up
-        if (board[coords.row + 1]?.[coords.col] != null) {
-            neighbors.push(new Coords(coords.row + 1, coords.col));
+        if (board[row + 1]?.[col] != null) {
+            neighbors.push(new Coords(row + 1, col));
         }
 
         // Down
-        if (board[coords.row - 1]?.[coords.col] != null) {
-            neighbors.push(new Coords(coords.row - 1, coords.col));
+        if (board[row - 1]?.[col] != null) {
+            neighbors.push(new Coords(row - 1, col));
         }
 
         // Left
-        if (board[coords.row]?.[coords.col - 1] != null) {
-            neighbors.push(new Coords(coords.row, coords.col - 1));
+        if (board[row]?.[col - 1] != null) {
+            neighbors.push(new Coords(row, col - 1));
         }
 
         // Right
-        if (board[coords.row]?.[coords.col + 1] != null) {
-            neighbors.push(new Coords(coords.row, coords.col + 1));
+        if (board[row]?.[col + 1] != null) {
+            // At the current position, where did we come from?
+            const fromOne = path.get(new Coords(row, col).key);
+            const fromTwo = fromOne ? path.get(fromOne?.coords.key) : undefined;
+            const hasThreeLeft = (fromOne?.col === col - 1) && (fromTwo?.col === col - 2);
+            const isStart = [fromOne, fromTwo].some((f) => f?.col === 0 && f?.row === 0);
+
+            if (!hasThreeLeft && !isStart) {
+                neighbors.push(new Coords(row, col + 1));
+            }
         }
 
         return neighbors;
     }
 
     function reconstructPath(goal: string, start: string, path: Map<string, QueueEntry | null>, board: (number | string)[][]) {
+        console.log(`PATH ----------------------------------------------------------`,);
         const boardCopy = structuredClone(board);
         let current = goal;
 
@@ -85,104 +96,50 @@
         return pathArray;
     }
 
-    function getGraphCost(board: number[][], path: QueueEntry[]) {
-        let cost = 0;
-        let current = path.shift();
-        while (current) {
-            cost += board[current.row][current.col];
-            current = path.shift();
-        }
-
-        return cost;
-    }
-
-    function getLastThree(coords: Coords, path: Map<string, QueueEntry | null>) {
-        const pathArray: QueueEntry[] = [];
-        let current = path.get(coords.key);
-        if (!current) {
-            return [];
-        }
-
-        while (current && pathArray.length < 3) {
-            pathArray.push(current);
-            const next = path.get(current.coords.key);
-            if (!next) {
-                break;
-            }
-
-            current = next;
-        }
-
-        return pathArray.length === 3 ? pathArray : null;
-    }
-
-    function heuristic(a: Coords, b: Coords) {
-        // From top left to bottom right
-        return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
+    function getGraphCost(path: QueueEntry[]) {
+        return Array.from(path.values()).reduce((acc, val) => acc + val.heat, 0)
     }
 
     function dijkstra(board: number[][]) {
         const goal = new Coords(board.length - 1, board[0].length - 1);
-        let i = 0;
-        console.log('---------------------------------------------------');
-        board.forEach((row) => console.log(row.join(' ')));
 
         const priorityQueue: QueueEntry[] = [];
-        priorityQueue.push({ row: 0, col: 0, priority: 0, coords: new Coords(0, 0) });
+        priorityQueue.push({row: 0, col: 0, heat: 0, coords: new Coords(0, 0), move: 0});
         const cameFrom = new Map<string, QueueEntry | null>();
         cameFrom.set(new Coords(0, 0).key, null);
         const costSoFar = new Map<string, number>();
         costSoFar.set(new Coords(0, 0).key, 0);
 
-        while (priorityQueue.length && i < 200_000) {
-            i++;
+        while (priorityQueue.length) {
             const current = priorityQueue.shift()!;
+            console.log(`-------------------------------------------------------`,);
+            console.log(`current`, current);
 
             if (current.coords.key === goal.key) {
+                console.log(`current`, current);
                 break;
             }
 
-            const neighbors = getNeighbors(current.coords, board);
+            // reconstructPath(current.coords.key, new Coords(0, 0).key, cameFrom, board);
+
+            const neighbors = getNeighbors(current.coords.row, current.coords.col, board, cameFrom);
             for (const neighbor of neighbors) {
-                console.log(`--------------------------------`);
-                console.log(`neighbor`, neighbor);
-                const lastThree = getLastThree(neighbor, cameFrom);
-
-                const lastThreeAreSame = !!lastThree?.length && lastThree?.every((c) => c.row === neighbor.row || c.col === neighbor.col);
-
-                if (lastThreeAreSame) {
-                    console.log(`lastThree`, lastThree);
-                    console.log(`neighbor`, neighbor, board[neighbor.row][neighbor.col]);
-                }
-
                 const tileCost = board[neighbor.row][neighbor.col];
-                // console.log(`-----------------------------------------------`, );
-                // console.log(`costSoFar.get(current.coords.key)!`, costSoFar.get(current.coords.key)!);
-                // console.log(`tile`, tileCost);
-                const graphCost = getGraphCost(board, getPath(current.coords.key, new Coords(0, 0).key, cameFrom));
-                // console.log(`graphCost`, graphCost);
+                const newCost = costSoFar.get(current.coords.key)! + tileCost + getGraphCost(getPath(current.coords.key, new Coords(0, 0).key, cameFrom));
 
-                const newCost = costSoFar.get(current.coords.key)! + tileCost + graphCost;
-
-                console.log(`doesnt have neighbor`, !costSoFar.has(neighbor.key));
-                console.log(`new cost is less`, newCost < costSoFar.get(neighbor.key)!, newCost);
-
-                if (!costSoFar.has(neighbor.key) || newCost < costSoFar.get(neighbor.key)!) {
-                    console.log(`add`, neighbor);
+                if ((!costSoFar.has(neighbor.key)) || (newCost < costSoFar.get(neighbor.key)!)) {
                     costSoFar.set(neighbor.key, newCost);
-                    cameFrom.set(neighbor.key, current);
+                    cameFrom.set(neighbor.key, Object.freeze(current));
 
                     priorityQueue.push({
                         row: neighbor.row,
                         col: neighbor.col,
-                        priority: newCost + (lastThreeAreSame ? 1000 : 0),
-                        // priority: newCost + heuristic(neighbor, goal),
-                        coords: neighbor,
+                        heat: newCost,
+                        coords: new Coords(neighbor.row, neighbor.col),
+                        move: current.move + 1,
                     });
 
-                    priorityQueue.sort((a, b) => a.priority - b.priority);
-
-                    priorityQueue.forEach((q) => console.log(q.coords.key, q.priority));
+                    priorityQueue.sort((a, b) => a.heat - b.heat);
                 }
             }
         }
