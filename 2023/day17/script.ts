@@ -1,167 +1,116 @@
-(function () {
+(function() {
     const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
-    const board = lines.map(l => l.split('').map(s => parseInt(s)));
-    let currentLowest = Infinity;
-    let iterations = 0;
+    const board = lines.map((l) => l.split('').map((s) => parseInt(s)));
 
-    class Emitter {
-        constructor(
-            private row: number,
-            private column: number,
-            private sum: number,
-            private path: string[],
-            private largestRow: number,
-            private largestColumn: number,
-        ) {
-            if (row === board.length - 1 && column === board[0].length) {
-                if (this.sum < currentLowest) {
-                    currentLowest = this.sum;
-                    this.drawPath();
-                }
+    function getNeighbors([ row, col ]: number[]) {
+        const neighbors: number[][] = [];
 
-                return;
-            }
-
-            if (row < largestRow && (largestRow - row) > 1) {
-                return;
-            }
-
-            if (column < largestColumn && (largestColumn - column) > 1) {
-                return;
-            }
-
-            const tileValue = board[row]?.[column];
-            if (tileValue == null) {
-                return;
-            }
-
-            if (this.hasVisited(this.getTileKey())) {
-                return
-            }
-
-            const newSum = sum + tileValue;
-            if (newSum >= currentLowest) {
-                return;
-            }
-
-            const newLargestRow = row > this.largestRow ? row : this.largestRow;
-            const newLargestColumn = column > this.largestColumn ? column : this.largestColumn;
-
-            if (this.canGoLeft) {
-                new Emitter(
-                    row,
-                    column - 1,
-                    newSum,
-                    path.concat(this.getTileKey()),
-                    newLargestRow,
-                    newLargestColumn,
-                );
-            }
-
-            if (this.canGoDown) {
-                new Emitter(
-                    row + 1,
-                    column,
-                    newSum,
-                    path.concat(this.getTileKey()),
-                    newLargestRow,
-                    newLargestColumn,
-                );
-            }
-
-            if (this.canGoRight) {
-                new Emitter(
-                    row,
-                    column + 1,
-                    newSum,
-                    path.concat(this.getTileKey()),
-                    newLargestRow,
-                    newLargestColumn,
-                );
-            }
-
-            if (this.canGoUp) {
-                new Emitter(
-                    row - 1,
-                    column,
-                    newSum,
-                    path.concat(this.getTileKey()),
-                    newLargestRow,
-                    newLargestColumn,
-                );
-            }
+        // Up
+        if (board[row + 1]?.[col] != null) {
+            neighbors.push([ row + 1, col ]);
         }
 
-        drawPath() {
-            const path = this.path;
-            const clonedBoard: (number | string)[][] = structuredClone(board);
-
-            path.forEach((tileKey) => {
-                const [row, column] = tileKey.split(',').map(s => parseInt(s));
-                clonedBoard[row][column] = '.';
-            });
-
-            console.group('Path, ' + this.sum);
-            clonedBoard.forEach((row) => {
-                console.log(row.join(''));
-            });
-            console.groupEnd();
+        // Down
+        if (board[row - 1]?.[col] != null) {
+            neighbors.push([ row - 1, col ]);
         }
 
-        getTileKey(row?: number, column?: number) {
-            return `${row ?? this.row},${column ?? this.column}`;
+        // Left
+        if (board[row]?.[col - 1] != null) {
+            neighbors.push([ row, col - 1 ]);
         }
 
-        hasVisited(key: string) {
-            return this.path.includes(key);
+        // Right
+        if (board[row]?.[col + 1] != null) {
+            neighbors.push([ row, col + 1 ]);
         }
 
-        get canGoLeft() {
-            const hasAbove = this.hasVisited(this.getTileKey(this.row - 1, this.column));
-            const hasAboveLeft = this.hasVisited(this.getTileKey(this.row - 1, this.column - 1));
-            return !this.hasThreeLeftPrevious && !(hasAbove && hasAboveLeft);
-        }
-
-        get canGoRight() {
-            const hasAbove = this.hasVisited(this.getTileKey(this.row - 1, this.column));
-            const hasAboveRight = this.hasVisited(this.getTileKey(this.row - 1, this.column + 1));
-            return !this.hasThreeRightPrevious && !(hasAbove && hasAboveRight);
-        }
-
-        get canGoUp() {
-            const hasLeft = this.hasVisited(this.getTileKey(this.row, this.column - 1));
-            const hasAboveLeft = this.hasVisited(this.getTileKey(this.row - 1, this.column - 1));
-            return !this.hasThreeUpPrevious && !(hasLeft && hasAboveLeft);
-        }
-
-        get canGoDown() {
-            const hasLeft = this.hasVisited(this.getTileKey(this.row, this.column - 1));
-            const hasBelowLeft = this.hasVisited(this.getTileKey(this.row + 1, this.column - 1));
-            return !this.hasThreeDownPrevious && !(hasLeft && hasBelowLeft);
-        }
-
-        get hasThreeRightPrevious() {
-            return this.hasVisited(this.getTileKey(this.row, this.column - 1)) && this.hasVisited(this.getTileKey(this.row, this.column - 2)) && this.hasVisited(this.getTileKey(this.row, this.column - 3));
-        }
-
-        get hasThreeDownPrevious() {
-            return this.hasVisited(this.getTileKey(this.row - 1, this.column)) && this.hasVisited(this.getTileKey(this.row - 2, this.column)) && this.hasVisited(this.getTileKey(this.row - 3, this.column));
-        }
-
-        get hasThreeUpPrevious() {
-            return this.hasVisited(this.getTileKey(this.row + 1, this.column)) && this.hasVisited(this.getTileKey(this.row + 2, this.column)) && this.hasVisited(this.getTileKey(this.row + 3, this.column));
-        }
-
-        get hasThreeLeftPrevious() {
-            return this.hasVisited(this.getTileKey(this.row, this.column + 1)) && this.hasVisited(this.getTileKey(this.row, this.column + 2)) && this.hasVisited(this.getTileKey(this.row, this.column + 3));
-        }
+        return neighbors;
     }
 
-    new Emitter(0, 0, -board[0][0], [], 0, 0);
+    function reconstructPath(goal: string, start: string, path: Map<string, string>, board: (number | string)[][]) {
+        console.log(`goal`, goal);
+        console.log(`start`, start);
+        console.log(`path`, path);
 
-    console.log(`Lowest:`, currentLowest);
-    console.log(`Iterations:`, iterations);
+        const boardCopy = structuredClone(board);
+        let current = goal;
+
+        while (current !== start) {
+            const currentCoords = current.split(',').map((n) => parseInt(n));
+            boardCopy[currentCoords[0]][currentCoords[1]] = 'X';
+            current = path.get(current)!;
+        }
+
+        boardCopy.forEach((row) => console.log(row.join(' ')));
+    }
+
+    function dijkstra() {
+        const goal = [ board.length - 1, board[0].length - 1 ];
+        // const goal = [ 5, 11 ];
+
+        const priorityQueue: { row: number, col: number, priority: number, coords: string }[] = [];
+        priorityQueue.push({ row: 0, col: 0, priority: 0, coords: [ 0, 0 ].toString() });
+        const cameFrom = new Map<string, string>();
+        cameFrom.set([ 0, 0 ].toString(), '');
+        const costSoFar = new Map<string, number>();
+        costSoFar.set([ 0, 0 ].toString(), 0);
+
+        while (priorityQueue.length) {
+            const queue = priorityQueue.sort((a, b) => a.priority - b.priority);
+            const current = queue.shift()!;
+
+            if (current.coords === goal.toString()) {
+                break;
+            }
+
+            const neighbors = getNeighbors([ current.row, current.col ]);
+            for (const neighbor of neighbors) {
+                const newCost = costSoFar.get(current.coords)! + board[neighbor[0]][neighbor[1]];
+
+                if (!costSoFar.has(neighbor.toString()) || newCost < costSoFar.get(neighbor.toString())!) {
+                    costSoFar.set(neighbor.toString(), newCost);
+                    priorityQueue.push({ row: neighbor[0], col: neighbor[1], priority: newCost, coords: neighbor.toString() });
+                    cameFrom.set(neighbor.toString(), current.coords);
+                }
+            }
+        }
+
+        reconstructPath(goal.toString(), [ 0, 0 ].toString(), cameFrom, board);
+    }
+
+    function bfs() {
+        // const target = [ board.length - 1, board[0].length - 1 ];
+        const goal = [ 5, 11 ];
+
+        const front: number[][] = [];
+        front.push([ 0, 0 ]);
+        const cameFrom = new Map<string, string>();
+        cameFrom.set([ 0, 0 ].toString(), '');
+
+        while (front.length) {
+            const current = front.shift()!;
+            const neighbors = getNeighbors(current);
+
+            if (current.toString() === goal.toString()) {
+                break;
+            }
+
+            for (const neighbor of neighbors) {
+                if (!cameFrom.has(neighbor.toString())) {
+                    front.push(neighbor);
+                    cameFrom.set(neighbor.toString(), current.toString());
+                }
+            }
+        }
+
+        reconstructPath(goal.toString(), [ 0, 0 ].toString(), cameFrom, board);
+    }
+
+    // bfs();
+    dijkstra();
+
     console.log(`Time:`, performance.now() - start);
 })();

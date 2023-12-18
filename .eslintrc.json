@@ -207,22 +207,6 @@
           {
             "allowTemplateLiterals": true
           }
-        ],
-        "@angular-eslint/directive-selector": [
-          "error",
-          {
-            "type": "attribute",
-            "prefix": "eaw",
-            "style": "camelCase"
-          }
-        ],
-        "@angular-eslint/component-selector": [
-          "error",
-          {
-            "type": "element",
-            "prefix": "eaw",
-            "style": "kebab-case"
-          }
         ]
       }
     }
