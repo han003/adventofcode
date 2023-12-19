@@ -1,6 +1,6 @@
 "use strict";
 (function () {
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8');
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8');
     const start = performance.now();
     const lines = input.split(/\r?\n/).filter((l) => l.length);
     const coordinates = [];
@@ -43,33 +43,33 @@
     console.log(`gridRows`, gridRows);
     const gridColumns = Math.max(...coordinates.map((c) => c.column));
     console.log(`gridColumns`, gridColumns);
-    const checkTiles = [];
+    const checkTiles = new Set();
     // Top row
-    for (let i = 0; i < gridColumns; i++) {
+    for (let i = 0; i <= gridColumns; i++) {
         const found = coordinates.find(c => c.row === 0 && c.column === i);
         if (!found) {
-            checkTiles.push({ row: 0, column: i });
+            checkTiles.add(`${0},${i}`);
         }
     }
     // Bottom row
-    for (let i = 0; i < gridColumns; i++) {
+    for (let i = 0; i <= gridColumns; i++) {
         const found = coordinates.find(c => c.row === gridRows && c.column === i);
         if (!found) {
-            checkTiles.push({ row: gridRows, column: i });
+            checkTiles.add(`${gridRows},${i}`);
         }
     }
     // Left column
-    for (let i = 0; i < gridRows; i++) {
+    for (let i = 0; i <= gridRows; i++) {
         const found = coordinates.find(c => c.row === i && c.column === 0);
         if (!found) {
-            checkTiles.push({ row: i, column: 0 });
+            checkTiles.add(`${i},${0}`);
         }
     }
     // Right column
-    for (let i = 0; i < gridRows; i++) {
+    for (let i = 0; i <= gridRows; i++) {
         const found = coordinates.find(c => c.row === i && c.column === gridColumns);
         if (!found) {
-            checkTiles.push({ row: i, column: gridColumns });
+            checkTiles.add(`${i},${gridColumns}`);
         }
     }
     function getVisitedAtLocation(row, column, visited) {
@@ -102,20 +102,33 @@
         }
         return visited;
     }
+    console.log(`checkTiles`, checkTiles);
     let visited = new Set();
     checkTiles.forEach((tile) => {
-        visited = getVisitedAtLocation(tile.row, tile.column, visited);
+        const [row, column] = tile.split(',').map((n) => parseInt(n));
+        visited = getVisitedAtLocation(row, column, visited);
     });
     console.log(`visited.size`, visited.size);
     const totalArea = (gridRows + 1) * (gridColumns + 1);
     console.log(`totalArea`, totalArea);
     console.log(`totalArea - visited.size`, totalArea - visited.size);
+    // const grid = Array.from({length: gridRows + 1}, () => Array.from({length: gridColumns + 1}, () => '.'));
+    //
+    // coordinates.forEach((c) => {
+    //     grid[c.row][c.column] = '#';
+    // });
+    //
+    // visited.forEach((tile) => {
+    //     const [row, column] = tile.split(',').map((n) => parseInt(n));
+    //     grid[row][column] = 'O';
+    // });
+    //
+    // grid.forEach((row) => {
+    //     console.log(row.join(''));
+    // });
     // Trench is the number of # tiles
     const trench = coordinates.length;
     console.log(`trench`, trench);
-    const inside = 0; // grid.reduce((acc, row) => acc + row.filter((tile) => tile === '.').length, 0);
-    console.log(`inside`, inside);
-    console.log(`trench + inside`, trench + inside);
     console.log(`Time:`, performance.now() - start);
 })();
 //# sourceMappingURL=script2.js.map
