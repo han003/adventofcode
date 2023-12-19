@@ -62,6 +62,17 @@
         coordinatesSet.add(`${c.row},${c.column}`);
     });
 
+    // Display coordinates in grid
+    // const grid: string[][] = [];
+    // for (let i = 0; i <= gridRows; i++) {
+    //     grid[i] = [];
+    //     for (let j = 0; j <= gridColumns; j++) {
+    //         grid[i][j] = coordinatesSet.has(`${i},${j}`) ? '#' : '.';
+    //     }
+    // }
+    //
+    // grid.forEach((row) => console.log(row.join('')));
+
     console.log(`coordinatesSet.size`, coordinatesSet.size);
 
     const checkTiles = new Set<string>();
@@ -106,13 +117,14 @@
     console.log(`Check`, checkTiles.size);
 
     function getVisitedAtLocation(row: number, column: number, visited: Set<string>) {
-        if (visited.has(`${row},${column}`)) {
+        const currKey = `${row},${column}`;
+        if (visited.has(currKey)) {
             return visited;
         }
 
         const queue: Location[] = [];
         queue.push({row, column});
-        visited.add(`${row},${column}`);
+        visited.add(currKey);
 
         while (queue.length) {
             const current = queue.shift()!;
@@ -145,6 +157,9 @@
         return visited;
     }
 
+    const totalArea = (gridRows + 1) * (gridColumns + 1);
+    console.log(`totalArea`, totalArea);
+
     let visited = new Set<string>();
 
     console.log(`checkTiles.size`, checkTiles.size);
@@ -156,8 +171,6 @@
 
     console.log(`visited.size`, visited.size);
 
-    const totalArea = (gridRows + 1) * (gridColumns + 1);
-    console.log(`totalArea`, totalArea);
     console.log(`totalArea - visited.size`, totalArea - visited.size);
 
     // Trench is the number of # tiles
