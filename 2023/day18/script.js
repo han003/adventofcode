@@ -8,6 +8,9 @@
     const coordinates = [];
     let previousDirection = null;
     let previousCoordinates = { row: 0, column: 0 };
+    function displayGrid(grid) {
+        grid.forEach((row) => console.log(row.join('')));
+    }
     lines.forEach((line) => {
         const [direction, distance, color] = line.split(' ');
         const distanceInt = parseInt(distance);
@@ -41,22 +44,51 @@
     const maxDown = Math.max(...coordinates.map((c) => c.row));
     console.log(`maxDown`, maxDown);
     coordinates.forEach((c) => {
-        c.column += maxLeft;
-        c.row += maxUp;
+        c.column += maxLeft + 1;
+        c.row += maxUp + 1;
     });
     console.log(`coordinates`, coordinates);
     const gridRows = Math.max(...coordinates.map((c) => c.row));
     console.log(`gridRows`, gridRows);
     const gridColumns = Math.max(...coordinates.map((c) => c.column));
     console.log(`gridColumns`, gridColumns);
-    const grid = new Array(gridRows + 1).fill('.').map(() => new Array(gridColumns + 1).fill('.'));
-    console.log(`grid`, grid);
-    coordinates.forEach((c) => {
-        grid[c.row][c.column] = '#';
-    });
+    const grid = new Array(gridRows + 2).fill('.').map(() => new Array(gridColumns + 3).fill('.'));
+    coordinates.forEach((c) => (grid[c.row][c.column] = '#'));
     console.log(`coordinates`, coordinates);
-    console.log(`grid`, grid);
     grid.forEach((row) => console.log(row.join('')));
+    const queue = [];
+    queue.push({ row: 0, column: 0 });
+    const visited = new Set();
+    visited.add('0,0');
+    while (queue.length) {
+        const current = queue.shift();
+        const { row, column } = current;
+        const neighbors = [
+            { row: row - 1, column },
+            { row: row + 1, column },
+            { row, column: column - 1 },
+            { row, column: column + 1 },
+        ];
+        neighbors.forEach((neighbor) => {
+            const { row, column } = neighbor;
+            const tile = grid[row]?.[column];
+            if (tile === '.' && !visited.has(`${row},${column}`)) {
+                queue.push(neighbor);
+                visited.add(`${row},${column}`);
+            }
+        });
+    }
+    visited.forEach((v) => {
+        const [row, column] = v.split(',').map((n) => parseInt(n));
+        grid[row][column] = 'O';
+    });
+    displayGrid(grid);
+    // Trench is the number of # tiles
+    const trench = grid.reduce((acc, row) => acc + row.filter((tile) => tile === '#').length, 0);
+    console.log(`trench`, trench);
+    const inside = grid.reduce((acc, row) => acc + row.filter((tile) => tile === '.').length, 0);
+    console.log(`inside`, inside);
+    console.log(`trench + inside`, trench + inside);
     console.log(`Time:`, performance.now() - start);
 })();
 //# sourceMappingURL=script.js.map
