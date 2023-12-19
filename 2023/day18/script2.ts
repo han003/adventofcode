@@ -1,5 +1,5 @@
 (function () {
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
 
@@ -10,7 +10,7 @@
 
     lines.forEach((line) => {
         const [direction, distance, color] = line.split(' ');
-        const distanceInt = parseInt(distance);
+        const distanceInt = parseInt(color.substring(2, color.length - 2), 16);
 
         let movement: { row: number, column: number } = {row: 0, column: 0};
 
@@ -34,16 +34,16 @@
         }
     });
 
-    const maxRight = Math.max(...coordinates.map((c) => c.column));
+    const maxRight = Math.abs(coordinates.reduce((acc, c) => c.column > acc ? c.column : acc, 0));
     console.log(`maxRight`, maxRight);
 
-    const maxLeft = Math.abs(Math.min(...coordinates.map((c) => c.column)));
+    const maxLeft = Math.abs(coordinates.reduce((acc, c) => c.column < acc ? c.column : acc, 0));
     console.log(`maxLeft`, maxLeft);
 
-    const maxUp = Math.abs(Math.min(...coordinates.map((c) => c.row)));
+    const maxUp = Math.abs(coordinates.reduce((acc, c) => c.row < acc ? c.row : acc, 0));
     console.log(`maxUp`, maxUp);
 
-    const maxDown = Math.max(...coordinates.map((c) => c.row));
+    const maxDown = Math.abs(coordinates.reduce((acc, c) => c.row > acc ? c.row : acc, 0));
     console.log(`maxDown`, maxDown);
 
     coordinates.forEach((c) => {
@@ -51,44 +51,59 @@
         c.row += maxUp;
     });
 
-    const gridRows = Math.max(...coordinates.map((c) => c.row));
+    const gridRows = coordinates.reduce((acc, c) => c.row > acc ? c.row : acc, 0);
     console.log(`gridRows`, gridRows);
 
-    const gridColumns = Math.max(...coordinates.map((c) => c.column));
+    const gridColumns = coordinates.reduce((acc, c) => c.column > acc ? c.column : acc, 0);
     console.log(`gridColumns`, gridColumns);
+
+    const coordinatesSet = new Set<string>();
+    coordinates.forEach((c) => {
+        coordinatesSet.add(`${c.row},${c.column}`);
+    });
+
+    console.log(`coordinatesSet.size`, coordinatesSet.size);
 
     const checkTiles = new Set<string>();
     // Top row
     for (let i = 0; i <= gridColumns; i++) {
-        const found = coordinates.find(c => c.row === 0 && c.column === i);
-        if (!found) {
-            checkTiles.add(`${0},${i}`);
+        const key = `${0},${i}`;
+        if (!coordinatesSet.has(key)) {
+            checkTiles.add(key);
         }
     }
+
+    console.log(`Check`, checkTiles.size);
 
     // Bottom row
     for (let i = 0; i <= gridColumns; i++) {
-        const found = coordinates.find(c => c.row === gridRows && c.column === i);
-        if (!found) {
-            checkTiles.add(`${gridRows},${i}`);
+        const key = `${gridRows},${i}`;
+        if (!coordinatesSet.has(key)) {
+            checkTiles.add(key);
         }
     }
+
+    console.log(`Check`, checkTiles.size);
 
     // Left column
     for (let i = 0; i <= gridRows; i++) {
-        const found = coordinates.find(c => c.row === i && c.column === 0);
-        if (!found) {
-            checkTiles.add(`${i},${0}`);
+        const key = `${i},${0}`;
+        if (!coordinatesSet.has(key)) {
+            checkTiles.add(key);
         }
     }
 
+    console.log(`Check`, checkTiles.size);
+
     // Right column
     for (let i = 0; i <= gridRows; i++) {
-        const found = coordinates.find(c => c.row === i && c.column === gridColumns);
-        if (!found) {
-            checkTiles.add(`${i},${gridColumns}`);
+        const key = `${i},${gridColumns}`;
+        if (!coordinatesSet.has(key)) {
+            checkTiles.add(key);
         }
     }
+
+    console.log(`Check`, checkTiles.size);
 
     function getVisitedAtLocation(row: number, column: number, visited: Set<string>) {
         if (visited.has(`${row},${column}`)) {
@@ -117,9 +132,10 @@
                     return;
                 }
 
-                const isTrench = coordinates.find((c) => c.row === row && c.column === column);
+                const key = `${row},${column}`;
+                const isTrench = coordinatesSet.has(key);
 
-                if (!isTrench && !visited.has(`${row},${column}`)) {
+                if (!isTrench && !visited.has(key)) {
                     queue.push(neighbor);
                     visited.add(`${row},${column}`);
                 }
@@ -129,9 +145,10 @@
         return visited;
     }
 
-    console.log(`checkTiles`, checkTiles);
-
     let visited = new Set<string>();
+
+    console.log(`checkTiles.size`, checkTiles.size);
+
     checkTiles.forEach((tile) => {
         const [row, column] = tile.split(',').map((n) => parseInt(n));
         visited = getVisitedAtLocation(row, column, visited);
@@ -142,21 +159,6 @@
     const totalArea = (gridRows + 1) * (gridColumns + 1);
     console.log(`totalArea`, totalArea);
     console.log(`totalArea - visited.size`, totalArea - visited.size);
-
-    // const grid = Array.from({length: gridRows + 1}, () => Array.from({length: gridColumns + 1}, () => '.'));
-    //
-    // coordinates.forEach((c) => {
-    //     grid[c.row][c.column] = '#';
-    // });
-    //
-    // visited.forEach((tile) => {
-    //     const [row, column] = tile.split(',').map((n) => parseInt(n));
-    //     grid[row][column] = 'O';
-    // });
-    //
-    // grid.forEach((row) => {
-    //     console.log(row.join(''));
-    // });
 
     // Trench is the number of # tiles
     const trench = coordinates.length;
