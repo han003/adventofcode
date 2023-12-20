@@ -10,6 +10,10 @@
     const workflows = new Map<string, Workflow>();
     const parts: Part[] = [];
 
+    function getRatingCombinations(rating: Rating) {
+        return (rating.x.max - rating.x.min) * (rating.m.max - rating.m.min) * (rating.a.max - rating.a.min) * (rating.s.max - rating.s.min);
+    }
+
     class Rule {
         index = 0;
         category?: Category;
@@ -32,11 +36,15 @@
 
         getValueRequiredForTrue(rating: Rating) {
             if (this.category && this.case && this.number) {
+                console.log(`Check TRUE`, this.category, this.case, this.number);
+
                 if (this.case === '<') {
-                    rating[this.category].max = this.number - 1;
+                    rating[this.category].max = Math.min(this.number - 1, rating[this.category].max);
                 } else {
-                    rating[this.category].min = this.number + 1;
+                    rating[this.category].min = Math.max(this.number + 1, rating[this.category].min);
                 }
+
+                console.log(`rating`, rating);
             }
 
             return rating;
@@ -45,9 +53,9 @@
         getValueRequiredForFalse(rating: Rating) {
             if (this.category && this.case && this.number) {
                 if (this.case === '<') {
-                    rating[this.category].min = this.number;
+                    rating[this.category].min = Math.max(this.number, rating[this.category].min);
                 } else {
-                    rating[this.category].max = this.number;
+                    rating[this.category].max = Math.min(this.number, rating[this.category].max);
                 }
             }
 
@@ -87,21 +95,19 @@
         }
 
         getPreviousWorkflow(key?: string) {
-            return Array.from(workflows.entries()).find(([_, value]) => value.rules.find((rule) => rule.nextWorkflow === (key || this.key)));
-        }
-
-        combinationsAvailable() {
-            const acceptRules = this.rules.filter((rule) => rule.canAccept);
-
-            if (!acceptRules.length) {
-                return 0;
+            const flow = Array.from(workflows.entries()).find(([_, value]) => value.rules.find((rule) => rule.nextWorkflow === (key || this.key)))?.[1];
+            if (!flow) {
+                return null;
             }
 
+            return flow;
+        }
+
+        combinationsAvailable(rule: Rule) {
             if (this.key === 'in') {
                 return 0;
             }
 
-            console.log(`acceptRules`, acceptRules);
             let rating: Rating = {
                 x: {min: 1, max: 4000},
                 m: {min: 1, max: 4000},
@@ -109,25 +115,42 @@
                 s: {min: 1, max: 4000},
             }
 
-            acceptRules.forEach((rule) => {
-                rating = rule.getValueRequiredForTrue(rating);
-                console.log(`rating`, rating);
+            rating = rule.getValueRequiredForTrue(rating);
 
-                this.rules.filter(r => r.index < rule.index).forEach((prequisiteRules) => {
-                    rating = prequisiteRules.getValueRequiredForFalse(rating);
-                });
-
-                console.log(`rating`, rating);
+            this.rules.filter(r => r.index < rule.index).forEach((r) => {
+                rating = r.getValueRequiredForFalse(rating);
             });
 
-            const previousFlow = this.getPreviousWorkflow();
-            console.log(`previousFlow`, previousFlow);
+            let fromKey = this.key;
+            let currentFlow: Workflow | null | undefined = this.getPreviousWorkflow();
 
-            while (previousFlow) {
+            while (currentFlow) {
+                const rule = currentFlow.rules.find((rule) => rule.nextWorkflow === fromKey);
+                if (!rule) {
+                    currentFlow = null;
+                    break;
+                }
 
+                // If rule is the last in the flow, all previous rules must be false
+                if (rule.index === currentFlow.rules.length - 1) {
+                    currentFlow.rules.filter(r => r.index < rule.index).forEach((r) => {
+                        rating = r.getValueRequiredForFalse(rating);
+                    });
+                } else {
+                    rating = rule.getValueRequiredForTrue(rating);
+
+                    currentFlow.rules.filter(r => r.index < rule.index).forEach((r) => {
+                        rating = r.getValueRequiredForFalse(rating);
+                    });
+                }
+
+                fromKey = currentFlow.key;
+                currentFlow = currentFlow.getPreviousWorkflow();
             }
 
-            return (rating.x.max - rating.x.min) * (rating.m.max - rating.m.min) * (rating.a.max - rating.a.min) * (rating.s.max - rating.s.min);
+            console.log(`rating`, rating);
+
+            return getRatingCombinations(rating);
         }
 
         next(part: Part): 'A' | 'R' | undefined {
@@ -175,8 +198,19 @@
         }
     });
 
-    console.log(`workflows.get('px')?.combinationsAvailable()`, workflows.get('px')?.combinationsAvailable());
-    console.log(`workflows.get('pv')?.combinationsAvailable()`, workflows.get('pv')?.combinationsAvailable());
+    let totalCombinations = 0;
+    workflows.forEach((workflow) => {
+
+        const acceptRules = workflow.rules.filter((rule) => rule.canAccept);
+        acceptRules.forEach((rule) => {
+            const available = workflow.combinationsAvailable(rule);
+            totalCombinations += available;
+            console.log(`------- ${workflow.key}`, rule.index, available.toExponential());
+        });
+    });
+
+    console.log(`goal combinations`, 167409079868000);
+    console.log(`totalCombinations`, totalCombinations, totalCombinations - 167409079868000);
 
     console.log(`Time:`, performance.now() - start);
 })();
