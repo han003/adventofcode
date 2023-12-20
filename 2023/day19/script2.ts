@@ -1,5 +1,5 @@
 (function () {
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
 
@@ -11,7 +11,7 @@
     const parts: Part[] = [];
 
     function getRatingCombinations(rating: Rating) {
-        return (rating.x.max - rating.x.min) * (rating.m.max - rating.m.min) * (rating.a.max - rating.a.min) * (rating.s.max - rating.s.min);
+        return (rating.x.max - rating.x.min + 1) * (rating.m.max - rating.m.min + 1) * (rating.a.max - rating.a.min + 1) * (rating.s.max - rating.s.min + 1)
     }
 
     class Rule {
@@ -52,11 +52,15 @@
 
         getValueRequiredForFalse(rating: Rating) {
             if (this.category && this.case && this.number) {
+                console.log(`Check FALSE`, this.category, this.case, this.number);
+
                 if (this.case === '<') {
                     rating[this.category].min = Math.max(this.number, rating[this.category].min);
                 } else {
                     rating[this.category].max = Math.min(this.number, rating[this.category].max);
                 }
+
+                console.log(`rating`, rating);
             }
 
             return rating;
@@ -148,8 +152,6 @@
                 currentFlow = currentFlow.getPreviousWorkflow();
             }
 
-            console.log(`rating`, rating);
-
             return getRatingCombinations(rating);
         }
 
@@ -210,7 +212,7 @@
     });
 
     console.log(`goal combinations`, 167409079868000);
-    console.log(`totalCombinations`, totalCombinations, totalCombinations - 167409079868000);
+    console.log(`totalCombinations`, totalCombinations, (totalCombinations - 167409079868000).toExponential());
 
     console.log(`Time:`, performance.now() - start);
 })();
