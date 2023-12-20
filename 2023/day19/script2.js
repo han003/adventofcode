@@ -6,7 +6,9 @@
     const workflows = new Map();
     const parts = [];
     class Rule {
-        constructor(ruleData) {
+        constructor(ruleData, index) {
+            this.index = 0;
+            this.index = index;
             if (ruleData.includes(':')) {
                 this.category = ruleData.substring(0, 1);
                 this.case = ruleData.substring(1, 2);
@@ -16,6 +18,31 @@
             else {
                 this.nextWorkflow = ruleData;
             }
+        }
+        getValueRequiredForTrue(rating) {
+            if (this.category && this.case && this.number) {
+                if (this.case === '<') {
+                    rating[this.category].max = this.number - 1;
+                }
+                else {
+                    rating[this.category].min = this.number + 1;
+                }
+            }
+            return rating;
+        }
+        getValueRequiredForFalse(rating) {
+            if (this.category && this.case && this.number) {
+                if (this.case === '<') {
+                    rating[this.category].min = this.number;
+                }
+                else {
+                    rating[this.category].max = this.number;
+                }
+            }
+            return rating;
+        }
+        get canAccept() {
+            return this.nextWorkflow === 'A';
         }
         test(part) {
             const partNumber = this.category ? part[this.category] : null;
@@ -35,7 +62,42 @@
             this.key = '';
             this.rules = [];
             this.key = workflowData.substring(0, workflowData.indexOf('{'));
-            this.rules = workflowData.substring(workflowData.indexOf('{') + 1, workflowData.length - 1).split(',').map(r => new Rule(r));
+            this.rules = workflowData.substring(workflowData.indexOf('{') + 1, workflowData.length - 1).split(',').map((r, i) => new Rule(r, i));
+        }
+        get canAccept() {
+            return this.rules.some((rule) => rule.canAccept);
+        }
+        getPreviousWorkflow(key) {
+            return Array.from(workflows.entries()).find(([_, value]) => value.rules.find((rule) => rule.nextWorkflow === (key || this.key)));
+        }
+        combinationsAvailable() {
+            const acceptRules = this.rules.filter((rule) => rule.canAccept);
+            if (!acceptRules.length) {
+                return 0;
+            }
+            if (this.key === 'in') {
+                return 0;
+            }
+            console.log(`acceptRules`, acceptRules);
+            let rating = {
+                x: { min: 1, max: 4000 },
+                m: { min: 1, max: 4000 },
+                a: { min: 1, max: 4000 },
+                s: { min: 1, max: 4000 },
+            };
+            acceptRules.forEach((rule) => {
+                rating = rule.getValueRequiredForTrue(rating);
+                console.log(`rating`, rating);
+                this.rules.filter(r => r.index < rule.index).forEach((prequisiteRules) => {
+                    rating = prequisiteRules.getValueRequiredForFalse(rating);
+                });
+                console.log(`rating`, rating);
+            });
+            const previousFlow = this.getPreviousWorkflow();
+            console.log(`previousFlow`, previousFlow);
+            while (previousFlow) {
+            }
+            return (rating.x.max - rating.x.min) * (rating.m.max - rating.m.min) * (rating.a.max - rating.a.min) * (rating.s.max - rating.s.min);
         }
         next(part) {
             for (let i = 0; i < this.rules.length; i++) {
@@ -79,14 +141,8 @@
             workflows.set(workflow.key, workflow);
         }
     });
-    let totalOfAllParts = 0;
-    parts.forEach((part) => {
-        const status = workflows.get('in').next(part);
-        if (status === 'A') {
-            totalOfAllParts += part.totalRating;
-        }
-    });
-    console.log(`totalOfAllParts`, totalOfAllParts);
+    console.log(`workflows.get('px')?.combinationsAvailable()`, workflows.get('px')?.combinationsAvailable());
+    console.log(`workflows.get('pv')?.combinationsAvailable()`, workflows.get('pv')?.combinationsAvailable());
     console.log(`Time:`, performance.now() - start);
 })();
 //# sourceMappingURL=script2.js.map
