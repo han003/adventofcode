@@ -1,27 +1,24 @@
 "use strict";
 (function () {
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input-2.txt'), 'utf-8');
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8');
     const start = performance.now();
     const lines = input.split(/\r?\n/).filter((l) => l.length);
     class Module {
         constructor(id) {
             this.pulseCount = { high: 0, low: 0 };
-            this.inputModules = [];
-            this.destinationModules = [];
+            this.inputModules = new Map();
+            this.destinationModules = new Map();
             this.state = 'off';
             this.id = id;
         }
         addInputModule(module) {
-            this.inputModules.push(module);
+            this.inputModules.set(module.id, module);
         }
-        removeInputModule(module) {
-            this.inputModules = this.inputModules.filter((m) => m.id !== module.id);
-        }
+        // removeInputModule(module: Module) {
+        //     this.inputModules = this.inputModules.filter((m) => m.id !== module.id);
+        // }
         addDestinationModule(module) {
-            this.destinationModules.push(module);
-        }
-        removeDestinationModule(module) {
-            this.destinationModules = this.destinationModules.filter((m) => m.id !== module.id);
+            this.destinationModules.set(module.id, module);
         }
     }
     class UntypedModule extends Module {
@@ -38,8 +35,8 @@
     }
     /**
      * Flip-flop modules (prefix %) are either on or off; they are initially off.
-     * If a flip-flop module receives a high pulse, it is ignored and nothing happens. However,
-     * if a flip-flop module receives a low pulse, it flips between on and off.
+     * If a flip-flop module receives a high pulse, it is ignored and nothing happens.
+     * However, if a flip-flop module receives a low pulse, it flips between on and off.
      * If it was off, it turns on and sends a high pulse. If it was on, it turns off and sends a low pulse.
      */
     class FlipFlopModule extends Module {
@@ -56,18 +53,19 @@
         }
         receivePulse(pulse) {
             if (pulse === 'high') {
+                this.next = undefined;
                 return;
             }
             if (this.state === 'off') {
-                this.state = 'on';
                 this.next = () => {
+                    this.state = 'on';
                     this.sendPulse('high');
                     this.next = undefined;
                 };
             }
             else {
-                this.state = 'off';
                 this.next = () => {
+                    this.state = 'off';
                     this.sendPulse('low');
                     this.next = undefined;
                 };
@@ -99,19 +97,11 @@
         }
         receivePulse(pulse, from) {
             this.memory.set(from.id, pulse);
-            // If we have a high pulse from every input module, send a high pulse
-            if (Array.from(this.memory.values()).every((p) => p === 'high')) {
-                this.next = () => {
-                    this.sendPulse('low');
-                    this.next = undefined;
-                };
-            }
-            else {
-                this.next = () => {
-                    this.sendPulse('high');
-                    this.next = undefined;
-                };
-            }
+            const pulseToSend = this.memory.size !== 0 && Array.from(this.memory.values()).every((p) => p === 'high') ? 'low' : 'high';
+            this.next = () => {
+                this.sendPulse(pulseToSend);
+                this.next = undefined;
+            };
         }
     }
     /**
@@ -124,8 +114,8 @@
         }
         sendPulse(pulse) {
             this.destinationModules.forEach((m) => {
-                console.log(`Broadcaster sends ${pulse} to ${m.id}`);
                 this.pulseCount[pulse]++;
+                console.log(`Broadcaster sends ${pulse} to ${m.id}`);
                 m.receivePulse(pulse, this);
             });
         }
@@ -192,8 +182,6 @@
                 break;
         }
     });
-    console.log(`Created modules`, '-------------------------------------------------------------');
-    console.log(`modules`, modules);
     // Add destination modules to modules
     lines.forEach((line) => {
         const [source, destinations] = line.split(' -> ');
@@ -206,15 +194,12 @@
         });
     });
     console.log(`Added inputs and destinations`, '-------------------------------------------------------------');
-    console.log(`modules`, modules);
-    buttonModule.next?.();
-    broadcastModule.next?.();
     function getNexts() {
         const nexts = modules.reduce((acc, module) => module.next === undefined ? acc : acc.concat(module.next), []);
         console.log(`nexts`, nexts);
         return nexts;
     }
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 1; i++) {
         console.log(`RUN {${i + 1}}`, '-------------------------------------------------------------');
         buttonModule.press();
         let nexts = getNexts();
