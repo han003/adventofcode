@@ -5,6 +5,7 @@
     const lines = input.split(/\r?\n/).filter((l) => l.length);
     class Module {
         constructor(id) {
+            this.pulseCount = { high: 0, low: 0 };
             this.inputModules = [];
             this.destinationModules = [];
             this.state = 'off';
@@ -49,6 +50,7 @@
         sendPulse(pulse) {
             this.destinationModules.forEach((m) => {
                 console.log(`FlipFlop`, this.id, 'sends', pulse, 'to', m.id);
+                this.pulseCount[pulse]++;
                 m.receivePulse(pulse, this);
             });
         }
@@ -91,6 +93,7 @@
         sendPulse(pulse) {
             this.destinationModules.forEach((m) => {
                 console.log(`Conjunction`, this.id, 'sends', pulse, 'to', m.id);
+                this.pulseCount[pulse]++;
                 m.receivePulse(pulse, this);
             });
         }
@@ -122,6 +125,7 @@
         sendPulse(pulse) {
             this.destinationModules.forEach((m) => {
                 console.log(`Broadcaster sends ${pulse} to ${m.id}`);
+                this.pulseCount[pulse]++;
                 m.receivePulse(pulse, this);
             });
         }
@@ -139,14 +143,18 @@
     class ButtonModule extends Module {
         constructor(broadcastModule) {
             super('button');
+            this.next = undefined;
+            this.broadcastModule = broadcastModule;
+        }
+        press() {
             this.next = () => {
                 this.sendPulse();
                 this.next = undefined;
             };
-            this.broadcastModule = broadcastModule;
         }
         sendPulse() {
             console.log(`Button module sends low to broadcaster`);
+            this.pulseCount.low++;
             this.broadcastModule.receivePulse('low');
         }
         receivePulse() {
@@ -156,73 +164,48 @@
     const broadcastModule = new BroadcastModule();
     const buttonModule = new ButtonModule(broadcastModule);
     const modules = [buttonModule, broadcastModule];
-    const destinationModules = new Map();
-    const inputModules = new Map();
+    const moduleIds = new Set();
+    // Get all IDs
     lines.forEach((line) => {
         const [source, destinations] = line.split(' -> ');
-        const type = source[0];
-        const id = source === 'broadcaster' ? source : source.slice(1);
-        const destinationArray = destinations.split(', ');
-        destinationModules.set(id, destinationArray);
-        destinationArray.forEach((destination) => {
-            inputModules.set(destination, inputModules.get(destination) || new Set());
-            inputModules.get(destination).add(id);
+        const id = source.startsWith('%') || source.startsWith('&') ? source.slice(1) : source;
+        moduleIds.add(id);
+        destinations.split(', ').forEach((destination) => {
+            moduleIds.add(destination);
         });
-        console.log(`id`, id);
-        console.log(`destinations`, destinations);
-        if (id === 'broadcaster') {
-            return;
-        }
-        console.log(`type`, type);
-        console.log(`id`, id);
-        switch (type) {
-            case '%':
+    });
+    console.log(`Added IDs`, '-------------------------------------------------------------');
+    console.log(`moduleIds`, moduleIds);
+    // Create modules
+    moduleIds.forEach((id) => {
+        switch (true) {
+            case id === 'broadcaster':
+                break;
+            case lines.some((line) => line.startsWith(`%${id}`)):
                 modules.push(new FlipFlopModule(id));
                 break;
-            case '&':
+            case lines.some((line) => line.startsWith(`&${id}`)):
                 modules.push(new ConjunctionModule(id));
                 break;
             default:
                 modules.push(new UntypedModule(id));
+                break;
         }
     });
+    console.log(`Created modules`, '-------------------------------------------------------------');
     console.log(`modules`, modules);
-    destinationModules.forEach((destinations, source) => {
-        if (source === 'broadcaster') {
-            destinations.forEach((destination) => {
-                const destinationModule = modules.find((m) => m.id === destination);
-                if (!destinationModule) {
-                    throw new Error(`Destination module not found: ${destination}`);
-                }
-                broadcastModule.addDestinationModule(destinationModule);
-            });
-            return;
-        }
-        const sourceModule = modules.find((m) => m.id === source);
-        if (!sourceModule) {
-            throw new Error(`Source module not found: ${source}`);
-        }
-        destinations.forEach((destination) => {
+    // Add destination modules to modules
+    lines.forEach((line) => {
+        const [source, destinations] = line.split(' -> ');
+        const sourceId = source.startsWith('%') || source.startsWith('&') ? source.slice(1) : source;
+        const sourceModule = modules.find((m) => m.id === sourceId);
+        destinations.split(', ').forEach((destination) => {
             const destinationModule = modules.find((m) => m.id === destination);
-            if (!destinationModule) {
-                throw new Error(`Destination module not found: ${destination}`);
-            }
-            sourceModule.addDestinationModule(destinationModule);
+            sourceModule?.addDestinationModule(destinationModule);
+            destinationModule?.addInputModule(sourceModule);
         });
     });
-    inputModules.forEach((sources, destination) => {
-        const destinationModule = modules.find((m) => m.id === destination);
-        if (!destinationModule) {
-            throw new Error(`Destination module not found: ${destination}`);
-        }
-        sources.forEach((source) => {
-            const sourceModule = modules.find((m) => m.id === source);
-            if (!sourceModule) {
-                throw new Error(`Source module not found: ${source}`);
-            }
-            destinationModule.addInputModule(sourceModule);
-        });
-    });
+    console.log(`Added inputs and destinations`, '-------------------------------------------------------------');
     console.log(`modules`, modules);
     buttonModule.next?.();
     broadcastModule.next?.();
@@ -231,11 +214,23 @@
         console.log(`nexts`, nexts);
         return nexts;
     }
-    let nexts = getNexts();
-    while (nexts.length) {
-        nexts.forEach((next) => next());
-        nexts = getNexts();
+    for (let i = 0; i < 1000; i++) {
+        console.log(`RUN {${i + 1}}`, '-------------------------------------------------------------');
+        buttonModule.press();
+        let nexts = getNexts();
+        while (nexts.length) {
+            nexts.forEach((next) => next());
+            nexts = getNexts();
+        }
     }
+    console.log(`modules`, modules);
+    const pulseCount = modules.reduce((acc, module) => {
+        acc.high += module.pulseCount.high;
+        acc.low += module.pulseCount.low;
+        return acc;
+    }, { high: 0, low: 0 });
+    console.log(`pulseCount`, pulseCount);
+    console.log(`answer`, pulseCount.low * pulseCount.high);
     console.log(`Time:`, performance.now() - start);
 })();
 //# sourceMappingURL=script.js.map
