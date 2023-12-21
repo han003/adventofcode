@@ -35,6 +35,16 @@
 
     console.log(`graph`, graph);
 
+    function getPath(node: string, previous: Record<string, string>) {
+        const path: string[] = [];
+        while (node) {
+            path.unshift(node);
+            node = previous[node];
+        }
+
+        return path;
+    }
+
     function dijkstra(graph: Map<string, Map<string, number>>, start: string, end: string) {
         console.log(`start`, start);
         console.log(`end`, end);
@@ -66,8 +76,6 @@
                 break;
             }
             if (closestNode === end) {
-                console.log(`distances`, distances);
-                console.log(`previous`, previous);
                 break;
             }
 
@@ -76,7 +84,23 @@
                     return;
                 }
 
-                const neighborWeight = graph.get(closestNode)?.get(neighbor) ?? Infinity;
+                const lastThree = getPath(neighbor, previous).slice(-3).map((s) => s.split(',').map((s) => parseInt(s)));
+                const threeColumns = lastThree.length === 3 && lastThree.every((c) => c[1] === parseInt(neighbor.split(',')[1]));
+                const threeRows = lastThree.length === 3 && lastThree.every((c) => c[0] === parseInt(neighbor.split(',')[0]));
+                console.log(`path`, neighbor, lastThree);
+                console.log(`threeColumns`, threeColumns);
+                console.log(`threeRows`, threeRows);
+
+                let neighborWeight = graph.get(closestNode)?.get(neighbor) ?? Infinity;
+                if (threeColumns) {
+                    neighborWeight = Infinity;
+                }
+                if (threeRows) {
+                    neighborWeight = Infinity;
+                }
+
+                console.log(`neighborWeight`, neighborWeight);
+
                 let newDistance = distances[closestNode] + neighborWeight;
 
                 if (newDistance < distances[neighbor]) {
@@ -88,16 +112,11 @@
             unvisited.delete(closestNode);
         }
 
-        const path: string[] = [];
-        let node = end;
-        while (node) {
-            path.unshift(node);
-            node = previous[node];
-        }
+        const path = getPath(end, previous)
 
         console.log(`path`, path);
 
-        console.log(`GRID -------------------------`, );
+        console.log(`GRID -------------------------`,);
 
         originalBoard.forEach((row, rowIndex) => {
             const formattedRow = row.map((column, columnIndex) => {
