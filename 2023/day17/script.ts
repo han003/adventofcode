@@ -1,135 +1,54 @@
 (function () {
+    const { Heap } = require('heap-js');
     const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
     const originalBoard = lines.map((l) => l.split('').map((s) => parseInt(s)));
 
-    const graph = new Map<string, Map<string, number>>();
+    type Block = {heat: number, row: number, column: number};
 
-    originalBoard.forEach((row, rowIndex) => {
-        row.forEach((column, columnIndex) => {
-            const key = `${rowIndex},${columnIndex}`;
+    const heap = new Heap((a: Block, b: Block) => a.heat - b.heat);
 
-            const up = rowIndex > 0 ? `${rowIndex - 1},${columnIndex}` : null;
-            const down = rowIndex < originalBoard.length - 1 ? `${rowIndex + 1},${columnIndex}` : null;
-            const left = columnIndex > 0 ? `${rowIndex},${columnIndex - 1}` : null;
-            const right = columnIndex < row.length - 1 ? `${rowIndex},${columnIndex + 1}` : null;
+    const visited = new Map<string, Block>();
 
-            const neighbors = new Map<string, number>();
-            if (up) {
-                neighbors.set(up, originalBoard[rowIndex - 1][columnIndex]);
-            }
-            if (down) {
-                neighbors.set(down, originalBoard[rowIndex + 1][columnIndex]);
-            }
-            if (left) {
-                neighbors.set(left, originalBoard[rowIndex][columnIndex - 1]);
-            }
-            if (right) {
-                neighbors.set(right, originalBoard[rowIndex][columnIndex + 1]);
-            }
+    heap.push({heat: 0, row: 0, column: 0});
 
-            graph.set(key, neighbors);
-        });
-    });
+    while (heap.length) {
+        const block = heap.pop() as Block;
+        const key = `${block.row},${block.column}`;
 
-    console.log(`graph`, graph);
-
-    function getPath(node: string, previous: Record<string, string>) {
-        const path: string[] = [];
-        while (node) {
-            path.unshift(node);
-            node = previous[node];
+        if (visited.has(key)) {
+            continue;
         }
 
-        return path;
-    }
+        visited.set(key, block);
 
-    function dijkstra(graph: Map<string, Map<string, number>>, start: string, end: string) {
-        console.log(`start`, start);
-        console.log(`end`, end);
+        const neighbors = [
+            { row: block.row - 1, column: block.column },
+            { row: block.row + 1, column: block.column },
+            { row: block.row, column: block.column - 1 },
+            { row: block.row, column: block.column + 1 },
+        ];
 
-        let distances: Record<string, number> = {};
-        let previous: Record<string, string> = {};
-        let unvisited = new Set<string>();
-
-        graph.forEach((_, node) => {
-            distances[node] = node === start ? 0 : Infinity;
-            unvisited.add(node);
-        });
-
-        console.log(`unvisited`, unvisited);
-
-        while (unvisited.size) {
-            let closestNode = null as string | null;
-
-            unvisited.forEach((node) => {
-                if (!closestNode || distances[node] < distances[closestNode]) {
-                    closestNode = node;
-                }
-            });
-
-            if (typeof closestNode !== 'string') {
-                break;
-            }
-            if (distances[closestNode] === Infinity) {
-                break;
-            }
-            if (closestNode === end) {
-                break;
+        neighbors.forEach((neighbor) => {
+            const neighborKey = `${neighbor.row},${neighbor.column}`;
+            if (visited.has(neighborKey)) {
+                return;
             }
 
-            graph.get(closestNode)?.forEach((_, neighbor) => {
-                if (typeof closestNode !== 'string') {
-                    return;
-                }
+            if (neighbor.row < 0 || neighbor.row >= originalBoard.length) {
+                return;
+            }
 
-                const lastThree = getPath(neighbor, previous).slice(-3).map((s) => s.split(',').map((s) => parseInt(s)));
-                const threeColumns = lastThree.length === 3 && lastThree.every((c) => c[1] === parseInt(neighbor.split(',')[1]));
-                const threeRows = lastThree.length === 3 && lastThree.every((c) => c[0] === parseInt(neighbor.split(',')[0]));
-                console.log(`path`, neighbor, lastThree);
-                console.log(`threeColumns`, threeColumns);
-                console.log(`threeRows`, threeRows);
+            if (neighbor.column < 0 || neighbor.column >= originalBoard[0].length) {
+                return;
+            }
 
-                let neighborWeight = graph.get(closestNode)?.get(neighbor) ?? Infinity;
-                if (threeColumns) {
-                    neighborWeight = Infinity;
-                }
-                if (threeRows) {
-                    neighborWeight = Infinity;
-                }
+            const neighborBlock = { row: neighbor.row, column: neighbor.column, heat: block.heat + originalBoard[neighbor.row][neighbor.column] };
 
-                console.log(`neighborWeight`, neighborWeight);
-
-                let newDistance = distances[closestNode] + neighborWeight;
-
-                if (newDistance < distances[neighbor]) {
-                    distances[neighbor] = newDistance;
-                    previous[neighbor] = closestNode;
-                }
-            });
-
-            unvisited.delete(closestNode);
-        }
-
-        const path = getPath(end, previous)
-
-        console.log(`path`, path);
-
-        console.log(`GRID -------------------------`,);
-
-        originalBoard.forEach((row, rowIndex) => {
-            const formattedRow = row.map((column, columnIndex) => {
-                const key = `${rowIndex},${columnIndex}`;
-                return path.includes(key) ? '.' : String(originalBoard[rowIndex][columnIndex]);
-            });
-
-            console.log(formattedRow.join(''));
+            heap.push(neighborBlock);
         });
     }
-
-    // bfs();
-    dijkstra(graph, '0,0', `${originalBoard.length - 1},${originalBoard[0].length - 1}`);
 
     console.log(`Time:`, performance.now() - start);
 })();
