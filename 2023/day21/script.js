@@ -6,32 +6,6 @@
     function getKey(row, col) {
         return `${row}:${col}`;
     }
-    function printGrid() {
-        for (let row = 0; row < lines.length - 1; row++) {
-            for (let col = 0; col < lines[row].length - 1; col++) {
-                const key = getKey(row, col);
-                const tile = grid.get(key);
-                if (!tile) {
-                    throw new Error(`No tile`);
-                }
-                if (visited.has(key)) {
-                    if (tile.start) {
-                        process.stdout.write('S');
-                    }
-                    else {
-                        process.stdout.write(stepInfo.get(key)?.toString() || ' ');
-                    }
-                }
-                else if (tile.rock) {
-                    process.stdout.write('#');
-                }
-                else {
-                    process.stdout.write('.');
-                }
-            }
-            process.stdout.write('\n');
-        }
-    }
     const grid = lines.reduce((acc, row, rowIndex) => {
         row.split('').map((column, columnIndex) => {
             acc.set(getKey(rowIndex, columnIndex), {
@@ -75,11 +49,9 @@
                 nextQueue.set(neighbour.key, neighbour);
             });
         });
-        console.log(`nextQueue.length`, nextQueue.size);
         queue = nextQueue;
     }
     console.log(`queue`, queue.size);
-    console.log(`stepInfo`, stepInfo);
     console.log(`Time:`, performance.now() - start);
 })();
 //# sourceMappingURL=script.js.map
