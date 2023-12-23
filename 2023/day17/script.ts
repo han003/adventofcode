@@ -1,53 +1,181 @@
 (function () {
-    const { Heap } = require('heap-js');
-    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'example-input.txt'), 'utf-8') as string;
+    const input = require('fs').readFileSync(require('path').resolve(__dirname, 'input.txt'), 'utf-8') as string;
     const start = performance.now();
     const lines = (input.split(/\r?\n/) as string[]).filter((l) => l.length);
-    const originalBoard = lines.map((l) => l.split('').map((s) => parseInt(s)));
+    const graph = lines.reduce((acc, row, rowIndex) => {
+        row.split('').map((column, columnIndex) => {
+            acc.set(getKey(rowIndex, columnIndex), {
+                heat: Number(column),
+                row: rowIndex,
+                column: columnIndex,
+                key: getKey(rowIndex, columnIndex),
+                goal: rowIndex === lines.length - 1 && columnIndex === row.length - 1,
+            });
+        });
 
-    type Block = {heat: number, row: number, column: number};
+        return acc;
+    }, new Map<string, Block>());
 
-    const heap = new Heap((a: Block, b: Block) => a.heat - b.heat);
+    function getKey(row: number, col: number): string {
+        return `${row}:${col}`;
+    }
 
-    const visited = new Map<string, Block>();
+    function move(tryDirection: 'left' | 'right' | 'straight', state: State) {
+        const {row, column, heat, distance, direction} = state;
 
-    heap.push({heat: 0, row: 0, column: 0});
+        let nextDirection = direction;
+        let nextCol = 0;
+        let nextRow = 0;
 
-    while (heap.length) {
-        const block = heap.pop() as Block;
-        const key = `${block.row},${block.column}`;
-
-        if (visited.has(key)) {
-            continue;
+        if (state.direction === 'right') {
+            if (tryDirection === 'left') {
+                nextCol = column;
+                nextRow = row - 1;
+                nextDirection = 'up';
+            }
+            if (tryDirection === 'right') {
+                nextCol = column;
+                nextRow = row + 1;
+                nextDirection = 'down';
+            }
+            if (tryDirection === 'straight') {
+                nextCol = column + 1;
+                nextRow = row;
+            }
         }
 
-        visited.set(key, block);
+        if (state.direction === 'down') {
+            if (tryDirection === 'left') {
+                nextCol = column + 1;
+                nextRow = row;
+                nextDirection = 'right';
+            }
+            if (tryDirection === 'right') {
+                nextCol = column - 1;
+                nextRow = row;
+                nextDirection = 'left';
+            }
+            if (tryDirection === 'straight') {
+                nextCol = column;
+                nextRow = row + 1;
+            }
+        }
 
-        const neighbors = [
-            { row: block.row - 1, column: block.column },
-            { row: block.row + 1, column: block.column },
-            { row: block.row, column: block.column - 1 },
-            { row: block.row, column: block.column + 1 },
-        ];
+        if (state.direction === 'left') {
+            if (tryDirection === 'left') {
+                nextCol = column;
+                nextRow = row + 1;
+                nextDirection = 'down';
+            }
+            if (tryDirection === 'right') {
+                nextCol = column;
+                nextRow = row - 1;
+                nextDirection = 'up';
+            }
+            if (tryDirection === 'straight') {
+                nextCol = column - 1;
+                nextRow = row;
+            }
+        }
 
-        neighbors.forEach((neighbor) => {
-            const neighborKey = `${neighbor.row},${neighbor.column}`;
-            if (visited.has(neighborKey)) {
+        if (state.direction === 'up') {
+            if (tryDirection === 'left') {
+                nextCol = column - 1;
+                nextRow = row;
+                nextDirection = 'left';
+            }
+            if (tryDirection === 'right') {
+                nextCol = column + 1;
+                nextRow = row;
+                nextDirection = 'right';
+            }
+            if (tryDirection === 'straight') {
+                nextCol = column;
+                nextRow = row - 1;
+            }
+        }
+
+        const next = graph.get(getKey(nextRow, nextCol));
+        if (next) {
+            const newState: State = {
+                column: next.column,
+                row: next.row,
+                heat: heat + next.heat,
+                distance: tryDirection === 'straight' ? distance + 1 : 1,
+                direction: nextDirection,
+                path: [...state.path, state],
+            }
+
+
+            if (next.goal) {
+                endState = newState;
                 return;
             }
 
-            if (neighbor.row < 0 || neighbor.row >= originalBoard.length) {
-                return;
+            if (heat === 4) {
+                console.log(`state`, state);
             }
 
-            if (neighbor.column < 0 || neighbor.column >= originalBoard[0].length) {
-                return;
+            const seenKey = getSeenKey(newState);
+            if (!seen.has(seenKey)) {
+                seen.set(seenKey, newState.heat);
+                queue.push(newState);
             }
+        }
+    }
 
-            const neighborBlock = { row: neighbor.row, column: neighbor.column, heat: block.heat + originalBoard[neighbor.row][neighbor.column] };
+    function getSeenKey(state: State): string {
+        return `${state.row}:${state.column}:${state.direction}:${state.distance}`;
+    }
 
-            heap.push(neighborBlock);
-        });
+    type Block = { heat: number, row: number, column: number, key: string, goal: boolean };
+
+    type State = { row: number, column: number, heat: number, distance: number, direction: 'left' | 'right' | 'up' | 'down', path: State[] };
+
+    console.log(`graph`, graph);
+
+    let endState: State | null = null;
+    let queue: State[] = [];
+    const seen = new Map<string, number>();
+
+    queue.push({row: 0, column: 0, heat: 0, distance: 0, direction: 'right', path: []});
+    queue.push({row: 0, column: 0, heat: 0, distance: 0, direction: 'down', path: []});
+
+    while (!endState && queue.length) {
+        queue.sort((a, b) => a.heat - b.heat);
+
+        const state = queue.shift()!;
+        const {row, column, heat, distance, direction} = state;
+
+        move('left', state);
+        move('right', state);
+
+        if (distance < 3) {
+            move('straight', state);
+        }
+    }
+
+    console.log(`endState`, endState);
+
+    endState!.path.forEach((state) => {
+        console.log(state.row, state.column, state.direction);
+    });
+
+    console.log(`endState!.heat`, endState!.heat);
+
+    for (let row = 0; row < lines.length; row++) {
+        for (let col = 0; col < lines[row].length; col++) {
+            const isPath = endState!.path.some((state) => state.row === row && state.column === col);
+            const isEnd = endState!.row === row && endState!.column === col;
+
+            if (isPath || isEnd) {
+                process.stdout.write(`\x1b[31m${lines[row][col]}\x1b[0m`);
+            } else {
+                process.stdout.write(lines[row][col]);
+            }
+        }
+
+        process.stdout.write('\n');
     }
 
     console.log(`Time:`, performance.now() - start);
